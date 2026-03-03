@@ -705,6 +705,7 @@ footer p {
         top: 0;
         right: -100%; /* Hidden by default */
         width: 75%;
+        left: auto;
         height: 100vh;
         background: rgba(10, 10, 12, 0.98);
         backdrop-filter: blur(20px);
@@ -715,7 +716,7 @@ footer p {
         gap: 3rem;
         transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
         border-left: 1px solid rgba(255, 255, 255, 0.1);
-        z-index: 1000;
+        z-index: 1001;
     }
 
     .nav-links.active {
