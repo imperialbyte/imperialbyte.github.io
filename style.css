@@ -306,24 +306,6 @@ footer p {
     opacity: 0.5;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .nav-links { display: none; }
-    
-    /* Stacks the grid to be 1 column on mobile */
-    .hero-grid { 
-        grid-template-columns: 1fr; 
-        gap: 3rem;
-    }
-    
-    .hero-split {
-        min-height: auto;
-        padding-top: 8rem;
-    }
-    
-    .hero-content h1 { font-size: 2.5rem; }
-}
-
 /* ===========  ==============================
    ARTICLE READING PAGE STYLES
    ========================================= */
@@ -691,4 +673,70 @@ footer p {
     max-width: 100%;
     line-height: 1.5;
     opacity: 0.8;
+}
+
+/* 1. Hide Hamburger by default (Desktop) */
+.hamburger {
+    display: none;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 1001;
+}
+
+.hamburger span {
+    display: block;
+    width: 25px;
+    height: 2px;
+    background-color: var(--brand-gold);
+    transition: all 0.3s ease;
+}
+
+/* =========================================
+   MASTER MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 768px) {
+    /* 1. Show the Hamburger icon */
+    .hamburger { display: flex; }
+
+    /* 2. Style the Slide-out Menu */
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -100%; /* Hidden by default */
+        width: 75%;
+        height: 100vh;
+        background: rgba(10, 10, 12, 0.98);
+        backdrop-filter: blur(20px);
+        display: flex; /* Changed from 'none' to 'flex' */
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 3rem;
+        transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 1000;
+    }
+
+    .nav-links.active {
+        right: 0; /* Slide in! */
+    }
+
+    /* 3. Hamburger Animation to 'X' */
+    .hamburger.active span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+    /* 4. Fix the Page Layout so it doesn't break */
+    .hero-grid { 
+        grid-template-columns: 1fr; 
+        gap: 3rem;
+    }
+    
+    .hero-split {
+        min-height: auto;
+        padding-top: 8rem;
+    }
+    
+    .hero-content h1 { font-size: 2.5rem; }
 }
