@@ -27,11 +27,13 @@ body {
 #navbar {
     position: fixed;
     top: 0;
-    width: 100%;
+    left: 0;         /* Explicitly anchor to the left */
+    width: 100%;     /* Ensure it spans 100% of the viewport */
     background: rgba(10, 10, 12, 0.8);
     backdrop-filter: blur(10px);
     z-index: 1000;
     border-bottom: 1px solid rgba(255,255,255,0.05);
+    box-sizing: border-box; /* Prevents padding from pushing width past 100% */
 }
 
 .nav-container {
