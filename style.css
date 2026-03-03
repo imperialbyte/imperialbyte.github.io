@@ -1,0 +1,694 @@
+/* Color Palette & Variables */
+:root {
+    --bg-main: #0a0a0c;        /* Deep Apple-like black */
+    --bg-secondary: #121215;   /* Slightly lighter for cards */
+    --brand-gold: #ffcb27;     /* Classic premium gold */
+    --brand-gold-glow: rgba(255, 203, 39, 0.4);
+    --text-main: #ffffff;
+    --text-muted: #a1a1aa;
+}
+
+/* Base Setup */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+/* Navigation (Apple-style Glassmorphism) */
+#navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: rgba(10, 10, 12, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--brand-gold);
+    text-decoration: none;
+    letter-spacing: 1px;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    color: var(--text-main);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 400;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: var(--brand-gold);
+}
+
+/* Hero & Featured Split Section */
+.hero-split {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding-top: 6rem; /* Make room for the fixed navbar */
+}
+
+.hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Splits the screen exactly in half */
+    gap: 4rem; /* Space between left and right sides */
+    align-items: center;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: -1px;
+}
+
+.featured-title {
+    font-size: 1.2rem;
+    color: var(--brand-gold);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.glow-text {
+    background: linear-gradient(45deg, #fff, var(--brand-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: 1.5rem;
+    color: var(--brand-gold);
+    margin-bottom: 1.5rem;
+}
+
+.about-summary {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+}
+
+/* Sections & Grid */
+.section {
+    padding: 6rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.bg-darker {
+    background-color: #050505;
+    max-width: 100%;
+    padding: 6rem 0;
+}
+
+.bg-darker .grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    border-left: 4px solid var(--brand-gold);
+    padding-left: 1rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+/* Cards (Robinhood-style Gamified Interaction) & (iOS Glassmorphism & Focused Glow) */
+.card {
+    /* The Glass Effect */
+    background: rgba(18, 18, 21, 0.5); /* Semi-transparent black */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px); /* For Safari/iOS support */
+    
+    /* Subtle glossy edges to simulate light hitting glass */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.12); 
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    
+    padding: 2rem;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative; 
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Base shadow for depth */
+}
+
+/* Featured card slightly lighter to stand out */
+.featured-card {
+    grid-column: 1 / -1;
+    background: rgba(30, 30, 35, 0.5); 
+}
+
+.card > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* The Concentrated Glow */
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none; 
+    z-index: 1;
+    /* Shrunk to 300px, opacity increased to 0.18 for a tighter, brighter beam */
+    background: radial-gradient(
+        300px circle at var(--mouse-x) var(--mouse-y), 
+        rgba(255, 203, 39, 0.18), 
+        transparent 50%
+    );
+}
+
+.card:hover::before {
+    opacity: 1;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.15);
+    border-color: rgba(255, 201, 23, 0.99);
+}
+
+.card-tag {
+    display: inline-block;
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--brand-gold);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    width: max-content;
+}
+
+.date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.card p {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.read-more {
+    color: var(--brand-gold);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: margin-left 0.3s ease;
+}
+
+.card:hover .read-more {
+    margin-left: 5px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.primary-btn {
+    background: var(--brand-gold);
+    color: var(--bg-main);
+}
+
+.primary-btn:hover {
+    background: #fff;
+    box-shadow: 0 0 20px var(--brand-gold-glow);
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 2px solid var(--brand-gold);
+    color: var(--brand-gold);
+}
+
+.secondary-btn:hover {
+    background: var(--brand-gold);
+    color: var(--bg-main);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 6rem 2rem;
+    background: #050505;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+footer h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+footer p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+}
+
+.copyright {
+    margin-top: 4rem;
+    font-size: 0.9rem;
+    opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nav-links { display: none; }
+    
+    /* Stacks the grid to be 1 column on mobile */
+    .hero-grid { 
+        grid-template-columns: 1fr; 
+        gap: 3rem;
+    }
+    
+    .hero-split {
+        min-height: auto;
+        padding-top: 8rem;
+    }
+    
+    .hero-content h1 { font-size: 2.5rem; }
+}
+
+/* ===========  ==============================
+   ARTICLE READING PAGE STYLES
+   ========================================= */
+
+.article-wrapper {
+    padding-top: 8rem; /* Clears the fixed navbar */
+    padding-bottom: 4rem;
+    background-color: var(--bg-main);
+}
+
+.article-container {
+    max-width: 700px; /* Narrow column for perfect reading readability */
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.back-link {
+    display: inline-block;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+    transition: color 0.3s ease;
+}
+
+.back-link:hover {
+    color: var(--brand-gold);
+}
+
+.article-header {
+    margin-bottom: 2.5rem;
+}
+
+.article-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+}
+
+.article-meta {
+    color: var(--brand-gold);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.read-time {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+/* Images & Media */
+.article-hero-img {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    margin-bottom: 3rem;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+
+.inline-img {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 2rem 0;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Responsive Video Embeds */
+.video-container {
+    width: 100%;
+    aspect-ratio: 16 / 9; /* Modern CSS: Automatically keeps perfect video shape */
+    margin: 2rem 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.video-container iframe {
+    width: 100%;
+    height: 100%;
+}
+
+/* Typography & Content Spacing */
+.article-content {
+    color: #e4e4e7; /* Soft ash white to prevent eye strain */
+    font-size: 1.15rem;
+    line-height: 1.8; /* Massive breathing room for text */
+}
+
+.article-content p {
+    margin-bottom: 1.8rem;
+}
+
+.article-content h2 {
+    color: #ffffff;
+    font-size: 1.8rem;
+    margin-top: 3.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 0.5rem;
+}
+
+.article-content h3 {
+    color: #ffffff;
+    font-size: 1.4rem;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Mobile Adjustments for Articles */
+@media (max-width: 768px) {
+    .article-title {
+        font-size: 2.2rem;
+    }
+    .article-content {
+        font-size: 1.05rem;
+    }
+}
+
+/* =========================================
+   LIGHTBOX / IMAGE ZOOM ANIMATIONS
+   ========================================= */
+
+/* Makes the images in your articles look clickable */
+.article-hero-img, .inline-img {
+    cursor: zoom-in;
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.article-hero-img:hover, .inline-img:hover {
+    transform: scale(1.02); /* Slight pop out on hover */
+    filter: brightness(1.1);
+}
+
+/* The dark blurred overlay */
+.lightbox {
+    display: none; 
+    position: fixed;
+    z-index: 9999; /* Keeps it on top of the navbar */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(10, 10, 12, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+}
+
+/* The active state that triggers the fade-in */
+.lightbox.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* The enlarged image itself */
+.lightbox-content {
+    max-width: 95%;
+    max-height: 90vh; /* Prevents it from being taller than the screen */
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 203, 39, 0.1);
+    transform: scale(0.95); /* Starts slightly small */
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* The active state that triggers the scale-up bounce */
+.lightbox.active .lightbox-content {
+    transform: scale(1);
+}
+
+/* The X button */
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: var(--text-muted);
+    font-size: 40px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.lightbox-close:hover {
+    color: var(--brand-gold);
+}
+
+/* =========================================
+   ARCHIVE PAGES & FILTERS
+   ========================================= */
+
+.archive-wrapper {
+    padding-top: 10rem; /* Gives plenty of room below the navbar */
+    min-height: 80vh;
+}
+
+.archive-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Premium Apple-Style Dropdown */
+.glass-dropdown {
+    background-color: rgba(18, 18, 21, 0.5);
+    /* Injects a custom gold arrow directly into the background */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffcb27' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+    
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    padding: 0.5rem 2.5rem 0.5rem 1rem; /* Added extra padding on the right so text doesn't hit the arrow */
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none; /* Fixes it for Safari/iOS */
+}
+
+/* Forces the open menu to match your dark theme */
+.glass-dropdown option {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    padding: 10px;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .archive-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+}
+
+/* =========================================
+   PERSONAL STATS MODAL & PROGRESS BARS
+   ========================================= */
+
+/* The Glassmorphism Card */
+.stats-card {
+    background: rgba(18, 18, 21, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    transform: translateY(20px); /* Starts slightly lower */
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Animates the card sliding up when opened */
+.lightbox.active .stats-card {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.stats-title {
+    color: var(--text-main);
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+/* Progress Bar Structure */
+.stat-group {
+    margin-bottom: 2rem;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.stat-label {
+    color: var(--text-muted);
+}
+
+.stat-percent {
+    color: var(--text-main);
+}
+
+/* The dark empty track */
+.progress-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    height: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* The Robinhood Green animated fill */
+.progress-fill {
+    background: #00C805; 
+    height: 100%;
+    border-radius: 8px;
+    box-shadow: 0 0 12px rgba(0, 200, 5, 0.4); /* Neon glow effect */
+    width: 0; /* Starts at 0 for the animation */
+    transition: width 1s cubic-bezier(0.25, 1, 0.5, 1); /* Smooth sweeping fill */
+}
+
+/* =========================================
+   IMAGE CAPTIONS
+   ========================================= */
+
+.article-figure {
+    margin: 2rem 0; /* Maintains the breathing room around the whole block */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Overrides the margin on the image ONLY when it has a caption */
+.article-figure .inline-img, 
+.article-figure .article-hero-img {
+    margin: 0;
+    margin-bottom: 0.8rem; /* Puts the caption close to the image */
+}
+
+/* The faint, muted text styling */
+.image-caption {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    text-align: left;
+    width: 100%;
+    max-width: 100%;
+    line-height: 1.5;
+    opacity: 0.8;
+}

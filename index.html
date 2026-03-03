@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imperialbyte</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="#home" class="brand">Imperialbyte</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="research.html">Research</a></li>
+                <li><a href="opinions.html">Opinions</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header id="home" class="section hero-split">
+        <div class="hero-grid">
+
+            <div class="hero-content">
+                <h1 class="glow-text">IMPERIALBYTE</h1>
+                <p class="subtitle">My little corner on the Internet exploring technology, analyzing markets, and giving opinions.</p>
+                <p class="about-summary">I am a sophomore electrical engineering student interested in finance and machine learning. I suddenly got the urge to revive my website made years ago. Maybe I will write more articles, post my projects, and share my portfolio here; just more of my ideas.</p>
+                <p class="about-summary">Some companies I'll be covering are Nvidia, Microsoft, Google, Apple, and Robinhood.</p>
+                <button id="stats-btn" class="btn primary-btn">View My Stats</button>
+            </div>
+
+            <div class="hero-featured">
+                <h2 class="featured-title">Featured</h2>
+                <div class="card featured-card">
+                    <div class="card-tag">Opinion</div>
+                    <span class="date">March 3, 2026</span>
+                    <h3>Did AI Kill Web Development?</h3>
+                    <p>I vibe coded my new website with AI in less than a day.</p>
+                    <a href="opinions/did-ai-kill-web-development.html" class="read-more">Read Full Opinion &rarr;</a>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <section id="research" class="section">
+        <h2 class="section-title">Research & Analysis</h2>
+        <div class="grid">
+            <!-- <article class="card">
+                <span class="date">Mar 4, 2026</span>
+                <h3>Robinhood Presents: Take Flight</h3>
+                <p>A look at Robinhood's March 4 keynote on the future of family finance.</p>
+                <a href="articles/robinhood-presents-take-flight.html" class="read-more">Read Article &rarr;</a>
+            </article> -->
+        </div>
+    </section>
+
+    <section id="opinions" class="section">
+        <h2 class="section-title">Opinions & Perspectives</h2>
+        <div class="grid">
+            <article class="card">
+                <span class="date">March 3, 2026</span>
+                <h3>Did AI Kill Web Development?</h3>
+                <p>I vibe coded my new website with AI in less than a day.</p>
+                <a href="opinions/did-ai-kill-web-development.html" class="read-more">Read Opinion &rarr;</a>
+            </article>
+        </div>
+    </section>
+
+    <div id="stats-modal" class="lightbox">
+        <div class="stats-card">
+            <span class="lightbox-close" id="close-stats">&times;</span>
+            <h2 class="stats-title">Some Stats</h2>
+            
+            <div class="stat-group">
+                <div class="stat-header">
+                    <span class="stat-label">Electrical Engineering (B.S. Degree)</span>
+                    <span class="stat-percent">41%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 41%;"></div>
+                </div>
+            </div>
+
+            <!-- <div class="stat-group">
+                <div class="stat-header">
+                    <span class="stat-label">Current Project: </span>
+                    <span class="stat-percent">95%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 95%;"></div>
+                </div>
+            </div> -->
+
+        </div>
+    </div>
+
+    <div id="email-modal" class="lightbox">
+        <div class="stats-card" style="text-align: center;">
+            <span class="lightbox-close" id="close-email">&times;</span>
+            <h2 class="stats-title">Get In Touch</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">You can reach me directly at:</p>
+            
+            <a href="mailto:contact@imperialbyte.com" style="color: var(--brand-gold); font-size: 1.3rem; font-weight: 600; text-decoration: none; letter-spacing: 1px;">contact@imperialbyte.com</a>
+        </div>
+    </div>
+
+    <footer id="contact">
+        <div class="footer-content">
+            <h2>Contact</h2>
+            <p>Ways to contact me</p>
+            <button id="email-btn" class="btn secondary-btn">Email Me</button>
+            <p class="copyright">&copy; 2026 Imperialbyte</p>
+        </div>
+    </footer>
+
+    <!-- Jesus is King -->
+
+    <script src="script.js"></script>
+</body>
+</html>

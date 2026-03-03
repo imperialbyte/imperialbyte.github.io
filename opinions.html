@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imperialbyte - Opinions</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="brand">Imperialbyte</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="research.html">Research</a></li>
+                <li><a href="opinions.html">Opinions</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="section archive-wrapper">
+        
+        <div class="archive-header">
+            <div>
+                <h1 class="glow-text" style="font-size: 3rem; margin-bottom: 0.5rem;">Perspectives & Opinions</h1>
+                <p class="subtitle" style="font-size: 1.1rem;">My takes, predictions, and thoughts.</p>
+            </div>
+            
+            <div class="filter-controls">
+                <span class="filter-label">Sort by:</span>
+                <select id="sort-filter" class="glass-dropdown" title="Sort your perspectives">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid" id="research-grid">
+            <article class="card" data-date="2026-03-03">
+                <span class="date">March 3, 2026</span>
+                <h3>Did AI Kill Web Development?</h3>
+                <p>I vibe coded this website with AI in less than a day.</p>
+                <a href="opinions/did-ai-kill-web-development.html" class="read-more">Read Opinion &rarr;</a>
+            </article>
+        </div>
+    </main>
+
+    <footer id="contact">
+        <div class="footer-content">
+            <p class="copyright">&copy; 2026 Imperialbyte. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
