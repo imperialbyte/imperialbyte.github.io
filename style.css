@@ -743,3 +743,79 @@ footer p {
     
     .hero-content h1 { font-size: 2.5rem; }
 }
+
+/* =========================================
+   GLOSSARY / DEFINITION TERMS
+   ========================================= */
+
+.glossary-term {
+    color: var(--brand-gold);
+    text-decoration: underline dotted rgba(255, 203, 39, 0.5);
+    text-underline-offset: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0 2px;
+}
+
+.glossary-term:hover {
+    text-decoration: underline solid var(--brand-gold);
+    background: rgba(255, 203, 39, 0.1);
+    border-radius: 4px;
+}
+
+/* =========================================
+   ARTICLE LISTS
+   ========================================= */
+
+.article-list {
+    list-style: none; /* Removes the boring default browser bullets */
+    margin: 1.5rem 0 2.5rem 1rem;
+    padding: 0;
+}
+
+.article-list li {
+    color: #e4e4e7; /* Soft ash white to match your paragraph text */
+    font-size: 1.15rem;
+    line-height: 1.8;
+    margin-bottom: 1rem;
+    position: relative;
+    padding-left: 2rem; /* Makes room for the custom bullet */
+}
+
+/* Custom Gold Bullet Points */
+.article-list li::before {
+    content: "✦"; /* A sleek premium star/diamond */
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--brand-gold);
+    font-size: 1.2rem;
+}
+
+/* Makes the bold text stand out in Gold */
+.article-list li strong {
+    color: #ffffff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* =========================================
+   INLINE ARTICLE LINKS
+   ========================================= */
+
+.article-content p a {
+    color: var(--brand-gold);
+    text-decoration: none;
+    font-weight: 600;
+    /* Creates a subtle 2px gold underline */
+    box-shadow: inset 0 -2px 0 rgba(255, 203, 39, 0.4);
+    transition: all 0.3s ease;
+    padding: 0 2px;
+}
+
+.article-content p a:hover {
+    /* The underline 'grows' to fill the background on hover */
+    box-shadow: inset 0 -1.5em 0 rgba(255, 203, 39, 0.15);
+    color: #ffffff; /* Text turns white so it remains readable */
+    border-radius: 4px;
+}

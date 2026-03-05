@@ -172,3 +172,46 @@ document.querySelectorAll('.nav-links a').forEach(link => {
         document.body.style.overflow = '';
     });
 });
+
+// =========================================
+// Glossary Modal Functionality
+// =========================================
+const glossaryModal = document.getElementById('glossary-modal');
+const closeGlossary = document.getElementById('close-glossary');
+const glossaryTitle = document.getElementById('glossary-title');
+const glossaryDef = document.getElementById('glossary-definition');
+const glossaryTerms = document.querySelectorAll('.glossary-term');
+
+if (glossaryModal) {
+    glossaryTerms.forEach(term => {
+        term.addEventListener('click', () => {
+            // 1. Grab the hidden data from the clicked word
+            const termName = term.getAttribute('data-term');
+            const termDefinition = term.getAttribute('data-definition');
+
+            // 2. Inject that data into the empty modal
+            glossaryTitle.textContent = termName;
+            glossaryDef.textContent = termDefinition;
+
+            // 3. Open the modal and freeze background
+            glossaryModal.classList.add('active');
+            document.body.style.overflow = 'hidden'; 
+        });
+    });
+
+    // Close when clicking the X
+    if (closeGlossary) {
+        closeGlossary.addEventListener('click', () => {
+            glossaryModal.classList.remove('active');
+            document.body.style.overflow = ''; 
+        });
+    }
+
+    // Close when clicking the dark blurry background
+    glossaryModal.addEventListener('click', (e) => {
+        if (e.target === glossaryModal) {
+            glossaryModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
+}
