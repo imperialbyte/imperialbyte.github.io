@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOOD — Investment Research Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── DESIGN TOKENS ── */
+:root {
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-xs:   0.72rem;
+  --text-sm:   0.85rem;
+  --text-base: 0.95rem;
+  --text-md:   1.05rem;
+  --text-lg:   1.2rem;
+  --text-xl:   1.5rem;
+
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+  --space-4: 1rem;    --space-5: 1.25rem; --space-6: 1.5rem;
+  --space-8: 2rem;    --space-10: 2.5rem; --space-12: 3rem;
+
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+  --transition: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Dark finance palette */
+  --bg:           #0a0b0d;
+  --surface:      #111318;
+  --surface-2:    #161a21;
+  --surface-3:    #1c2129;
+  --border:       #242b36;
+  --border-light: #2e3848;
+
+  --text:         #e8eaf0;
+  --text-muted:   #8892a4;
+  --text-faint:   #4a5568;
+
+  --green:        #22c55e;
+  --green-dim:    #16a34a;
+  --green-bg:     rgba(34,197,94,0.08);
+  --yellow-green: #a3e635;
+  --red:          #f87171;
+  --red-bg:       rgba(248,113,113,0.08);
+  --blue:         #60a5fa;
+  --blue-dim:     #3b82f6;
+  --blue-bg:      rgba(96,165,250,0.08);
+  --gold:         #fbbf24;
+  --gold-bg:      rgba(251,191,36,0.08);
+  --purple:       #a78bfa;
+  --teal:         #2dd4bf;
+
+  --accent:       #00d4b1;
+  --accent-dim:   #00a88d;
+  --accent-bg:    rgba(0,212,177,0.08);
+  --accent-border:rgba(0,212,177,0.2);
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,0.6);
+}
+
+/* ── BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100dvh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+p, li { text-wrap: pretty; }
+h1,h2,h3,h4,h5,h6 { text-wrap: balance; line-height: 1.2; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-dim); }
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: rgba(10,11,13,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.header-logo {
+  display: flex; align-items: center; gap: var(--space-3);
+  font-size: var(--text-md); font-weight: 700; letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.logo-badge {
+  background: var(--accent); color: #000;
+  font-size: var(--text-xs); font-weight: 700;
+  padding: 2px 8px; border-radius: 4px; letter-spacing: 0.05em;
+}
+.header-price {
+  display: flex; align-items: baseline; gap: var(--space-2);
+  font-family: var(--font-mono);
+}
+.price-val { font-size: var(--text-lg); font-weight: 600; color: var(--text); }
+.price-chg { font-size: var(--text-sm); color: var(--red); }
+.header-rating {
+  margin-left: auto;
+  background: var(--green-bg); border: 1px solid var(--green-dim);
+  color: var(--green); font-size: var(--text-xs); font-weight: 600;
+  padding: 3px 10px; border-radius: var(--radius-sm); letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.header-date {
+  font-size: var(--text-xs); color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+/* ── NAV TABS ── */
+.nav-scroll {
+  overflow-x: auto; scrollbar-width: none;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 49px; z-index: 99;
+}
+.nav-scroll::-webkit-scrollbar { display: none; }
+.nav-tabs {
+  display: flex; align-items: center;
+  padding: 0 var(--space-4);
+  min-width: max-content;
+}
+.nav-tab {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm); font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition), border-color var(--transition);
+  white-space: nowrap;
+  display: flex; align-items: center; gap: var(--space-2);
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-icon { font-size: 13px; }
+
+/* ── MAIN CONTENT ── */
+.main { max-width: 1400px; margin: 0 auto; padding: var(--space-6); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── CARDS & LAYOUT ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+.card-sm { padding: var(--space-4); }
+.card-title {
+  font-size: var(--text-sm); font-weight: 600;
+  color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: var(--space-3);
+}
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); }
+.stack { display: flex; flex-direction: column; gap: var(--space-4); }
+.section-title {
+  font-size: var(--text-md); font-weight: 700;
+  color: var(--text); margin-bottom: var(--space-4);
+  display: flex; align-items: center; gap: var(--space-2);
+}
+.section-title::before {
+  content: ''; display: inline-block; width: 3px; height: 18px;
+  background: var(--accent); border-radius: 2px; flex-shrink: 0;
+}
+.section { margin-bottom: var(--space-8); }
+
+/* ── KPI CARDS ── */
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+.kpi-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-2); }
+.kpi-value { font-size: var(--text-xl); font-weight: 700; font-family: var(--font-mono); color: var(--text); line-height: 1; }
+.kpi-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); }
+.kpi-up { color: var(--green); }
+.kpi-down { color: var(--red); }
+.kpi-accent { border-top: 2px solid var(--accent); }
+.kpi-green { border-top: 2px solid var(--green); }
+.kpi-red { border-top: 2px solid var(--red); }
+.kpi-gold { border-top: 2px solid var(--gold); }
+.kpi-blue { border-top: 2px solid var(--blue); }
+.kpi-purple { border-top: 2px solid var(--purple); }
+
+/* ── BADGES & TAGS ── */
+.badge {
+  display: inline-flex; align-items: center;
+  font-size: var(--text-xs); font-weight: 600;
+  padding: 2px 8px; border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+.badge-green  { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+.badge-red    { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.badge-blue   { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(96,165,250,0.2); }
+.badge-gold   { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(251,191,36,0.2); }
+.badge-accent { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+.badge-muted  { background: rgba(136,146,164,0.1); color: var(--text-muted); border: 1px solid rgba(136,146,164,0.15); }
+
+/* ── TOGGLE BUTTONS ── */
+.btn-group { display: flex; gap: 2px; background: var(--surface-3); border-radius: var(--radius-md); padding: 3px; }
+.btn-toggle {
+  padding: 4px 14px; border-radius: 6px;
+  font-size: var(--text-xs); font-weight: 600;
+  color: var(--text-muted); transition: all var(--transition);
+}
+.btn-toggle.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.btn-toggle:hover:not(.active) { color: var(--text); }
+
+/* ── TABLES ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.data-table th {
+  text-align: left; padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+.data-table .num { font-family: var(--font-mono); text-align: right; }
+.data-table .th-right { text-align: right; }
+
+/* ── CHART CONTAINERS ── */
+.chart-wrap {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+.chart-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.chart-title { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+.chart-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+canvas { display: block; }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--border); margin: var(--space-5) 0; }
+
+/* ── VERDICT BOX ── */
+.verdict-box {
+  background: linear-gradient(135deg, rgba(0,212,177,0.06), rgba(0,212,177,0.02));
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+.verdict-title { font-size: var(--text-lg); font-weight: 700; color: var(--accent); margin-bottom: var(--space-2); }
+.verdict-sub { font-size: var(--text-sm); color: var(--text-muted); }
+
+/* ── RISK METER ── */
+.risk-bar { height: 6px; background: var(--surface-3); border-radius: 99px; margin-top: var(--space-1); overflow: hidden; }
+.risk-fill { height: 100%; border-radius: 99px; }
+
+/* ── THESIS TEXT ── */
+.thesis-body { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.75; }
+.thesis-body p { margin-bottom: var(--space-3); }
+.thesis-body strong { color: var(--text); font-weight: 600; }
+.thesis-body em { color: var(--accent); font-style: normal; font-weight: 500; }
+.thesis-section-title { font-size: var(--text-md); font-weight: 700; color: var(--text); margin-bottom: var(--space-3); margin-top: var(--space-5); display: flex; align-items: center; gap: var(--space-2); }
+.thesis-section-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* ── SCENARIO TABLE ── */
+.scenario-row { display: grid; grid-template-columns: 100px 1fr 100px 100px; gap: var(--space-4); align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+.scenario-row:last-child { border-bottom: none; }
+
+/* ── WORLD MAP ── */
+#worldMap { width: 100%; height: 440px; background: var(--surface-2); border-radius: var(--radius-lg); overflow: hidden; position: relative; }
+.map-legend { display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); }
+.legend-item { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* ── PROGRESS BARS ── */
+.progress-bar { height: 8px; background: var(--surface-3); border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+
+/* ── ANALYST CARD ── */
+.analyst-card {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.analyst-firm { font-size: var(--text-sm); font-weight: 700; color: var(--text); }
+.analyst-name { font-size: var(--text-xs); color: var(--text-muted); }
+.analyst-target { font-family: var(--font-mono); font-size: var(--text-lg); font-weight: 700; color: var(--gold); }
+.analyst-upside { font-size: var(--text-xs); color: var(--green); }
+
+/* ── OWNERSHIP ── */
+.owner-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+.owner-row:last-child { border-bottom: none; }
+.owner-name { flex: 1; font-size: var(--text-sm); color: var(--text); }
+.owner-pct { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; color: var(--text); width: 60px; text-align: right; }
+.owner-bar-wrap { flex: 2; }
+
+/* ── TIMELINE ── */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before { content:''; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+.timeline-item { position: relative; margin-bottom: var(--space-6); }
+.timeline-dot { position: absolute; left: -24px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,177,0.15); }
+.timeline-year { font-size: var(--text-xs); font-family: var(--font-mono); color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+.timeline-title { font-size: var(--text-sm); font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.timeline-text { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.65; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+/* ── SLIDERS ── */
+.slider-wrap { margin-bottom: var(--space-4); }
+.slider-label { display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-2); font-size:var(--text-sm); color:var(--text-muted); }
+.slider-val { font-family:var(--font-mono); font-size:var(--text-sm); font-weight:600; color:var(--accent); min-width:60px; text-align:right; }
+.preset-btn {
+  padding: 4px 12px; border-radius: var(--radius-md);
+  font-size: var(--text-xs); font-weight: 600; cursor: pointer;
+  transition: all var(--transition); white-space: nowrap;
+}
+.preset-btn:hover { filter: brightness(1.2); }
+input[type=range] {
+  width:100%; -webkit-appearance:none; appearance:none;
+  height:4px; border-radius:99px; background:var(--border-light);
+  outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px;
+  border-radius:50%; background:var(--accent); cursor:pointer;
+  box-shadow:0 0 0 3px rgba(0,212,177,0.2);
+  transition:box-shadow 0.2s;
+}
+input[type=range]::-webkit-slider-thumb:hover { box-shadow:0 0 0 5px rgba(0,212,177,0.3); }
+.stress-result-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:var(--space-3); margin-top:var(--space-4); }
+.stress-kpi { background:var(--surface-3); border-radius:var(--radius-md); padding:var(--space-3); text-align:center; }
+.stress-kpi-label { font-size:var(--text-xs); color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.stress-kpi-val { font-size:var(--text-lg); font-weight:700; font-family:var(--font-mono); }
+
+/* ── MAP ── */
+#worldMap {
+  width:100%; height:480px; background:#0d1117;
+  border-radius:var(--radius-lg); overflow:hidden; position:relative;
+  border:1px solid var(--border);
+}
+#worldMap svg { width:100%; height:100%; display:block; }
+.map-tooltip {
+  position:absolute; pointer-events:none;
+  background:rgba(17,19,24,0.95); border:1px solid var(--border-light);
+  color:var(--text); padding:6px 10px; border-radius:var(--radius-md);
+  font-size:var(--text-xs); white-space:nowrap;
+  opacity:0; transition:opacity 0.15s;
+}
+
+/* ── DISCLAIMER ── */
+.disclaimer {
+  margin-top: var(--space-8);
+  padding: var(--space-4);
+  background: rgba(136,146,164,0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  line-height: 1.6;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+  .main { padding: var(--space-4); }
+}
+@media (max-width: 600px) {
+  .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="HOOD Research">
+      <rect width="28" height="28" rx="6" fill="#00d4b1"/>
+      <path d="M7 20V8h3v5h8V8h3v12h-3v-5H10v5H7z" fill="#000" stroke="none"/>
+    </svg>
+    <span>HOOD</span>
+    <span class="logo-badge">NASDAQ</span>
+  </div>
+  <div class="header-price">
+    <span class="price-val">$68.90</span>
+    <span class="price-chg">▼ 1.73% · Mkt Closed</span>
+  </div>
+  <div style="display:flex;gap:var(--space-3);align-items:center;margin-left:auto;">
+    <span class="header-rating">ACCUMULATE</span>
+    <span class="header-date">Apr 5, 2026</span>
+  </div>
+</header>
+
+<!-- NAV TABS -->
+<nav class="nav-scroll">
+  <div class="nav-tabs" role="tablist">
+    <button class="nav-tab active" onclick="showTab('summary',this)" role="tab">
+      <span class="tab-icon">◈</span> Summary
+    </button>
+    <button class="nav-tab" onclick="showTab('thesis',this)" role="tab">
+      <span class="tab-icon">✦</span> Full Thesis
+    </button>
+    <button class="nav-tab" onclick="showTab('financials',this)" role="tab">
+      <span class="tab-icon">▦</span> Financials
+    </button>
+    <button class="nav-tab" onclick="showTab('stress',this)" role="tab">
+      <span class="tab-icon">⚡</span> Stress Test
+    </button>
+    <button class="nav-tab" onclick="showTab('valuation',this)" role="tab">
+      <span class="tab-icon">◎</span> Valuation
+    </button>
+    <button class="nav-tab" onclick="showTab('analysts',this)" role="tab">
+      <span class="tab-icon">◐</span> Analyst Views
+    </button>
+    <button class="nav-tab" onclick="showTab('ownership',this)" role="tab">
+      <span class="tab-icon">◑</span> Ownership
+    </button>
+    <button class="nav-tab" onclick="showTab('map',this)" role="tab">
+      <span class="tab-icon">⊕</span> Global Ops
+    </button>
+    <button class="nav-tab" onclick="showTab('stock',this)" role="tab">
+      <span class="tab-icon">⟁</span> Stock
+    </button>
+    <button class="nav-tab" onclick="showTab('history',this)" role="tab">
+      <span class="tab-icon">◬</span> History
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ═══════════════════ SUMMARY TAB ═══════════════════ -->
+<div id="tab-summary" class="tab-panel active">
+  <div class="verdict-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3)">
+      <div>
+        <div class="verdict-title">Accumulate — Long-Term Conviction</div>
+        <div class="verdict-sub">Robinhood Markets (HOOD) · Target: $119–$166 · Horizon: 3+ Years · Risk: Medium-High · Updated Apr 5, 2026</div>
+      </div>
+      <span class="badge badge-accent" style="font-size:var(--text-sm);padding:6px 16px">STRONG BUY</span>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="section">
+    <div class="section-title">Market Snapshot</div>
+    <div class="grid-4">
+      <div class="kpi kpi-accent">
+        <div class="kpi-label">Current Price</div>
+        <div class="kpi-value">$68.90</div>
+        <div class="kpi-sub kpi-down">▼ 55.2% off 52W high</div>
+      </div>
+      <div class="kpi kpi-accent">
+        <div class="kpi-label">Market Cap</div>
+        <div class="kpi-value">$62.0B</div>
+        <div class="kpi-sub">~900M diluted shares</div>
+      </div>
+      <div class="kpi kpi-green">
+        <div class="kpi-label">FY2025 Revenue</div>
+        <div class="kpi-value">$4.47B</div>
+        <div class="kpi-sub kpi-up">+51.6% YoY</div>
+      </div>
+      <div class="kpi kpi-green">
+        <div class="kpi-label">FY2025 Net Income</div>
+        <div class="kpi-value">$1.88B</div>
+        <div class="kpi-sub kpi-up">42.1% net margin</div>
+      </div>
+      <div class="kpi kpi-blue">
+        <div class="kpi-label">FY2025 FCF</div>
+        <div class="kpi-value">$1.62B</div>
+        <div class="kpi-sub">36.3% FCF margin</div>
+      </div>
+      <div class="kpi kpi-gold">
+        <div class="kpi-label">Adj. EBITDA Margin</div>
+        <div class="kpi-value">56.4%</div>
+        <div class="kpi-sub">3rd year of 70%+ incremental margins</div>
+      </div>
+      <div class="kpi kpi-purple">
+        <div class="kpi-label">Gold Subscribers</div>
+        <div class="kpi-value">4.18M</div>
+        <div class="kpi-sub kpi-up">+58.3% YoY</div>
+      </div>
+      <div class="kpi kpi-accent">
+        <div class="kpi-label">Total AUC</div>
+        <div class="kpi-value">$322B</div>
+        <div class="kpi-sub kpi-up">+67% YoY</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bull case in brief -->
+  <div class="section">
+    <div class="section-title">Why Now?</div>
+    <div class="grid-3">
+      <div class="card">
+        <div style="font-size:1.4rem;margin-bottom:var(--space-2)">📉</div>
+        <div class="card-title">The Dislocation</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.65">Stock is down 55% from its October 2025 high of $153.86 on crypto weakness and macro fear. The business has never been healthier — two consecutive years of 50%+ revenue growth, expanding FCF margins, and <strong>11 product lines</strong> now generating $100M+ ARR each.</div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.4rem;margin-bottom:var(--space-2)">🏦</div>
+        <div class="card-title">The Super App Thesis</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.65">Banking hit <strong>$1.5B deposits</strong> in 4 months. Strategies hit <strong>$1.3B AUM</strong> in 7 months. Prediction markets: <strong>$300M+ run rate</strong> in year one. Gold Card: <strong>600K holders</strong>, $10B annualized spend. The breadth is real.</div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.4rem;margin-bottom:var(--space-2)">⚖️</div>
+        <div class="card-title">The Regulatory Tailwind</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.65">GENIUS Act signed July 2025 — first federal stablecoin law. Clarity Act advancing in Senate. New SEC Chair Atkins withdrew all Gensler-era PFOF threats. Robinhood's core economics are structurally safe.</div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.4rem;margin-bottom:var(--space-2)">🔄</div>
+        <div class="card-title">Management Conviction</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.65">Board authorized a <strong>$1.5B buyback</strong> on March 24, 2026 — representing ~10% of market cap — directly signaling management views the price as a mispricing. JPMorgan credit line expanded to $3.25B.</div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.4rem;margin-bottom:var(--space-2)">🌏</div>
+        <div class="card-title">Global Expansion</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.65">UK, EU, Singapore, Canada (WonderFi ~closed), Indonesia (dual acquisition H1 2026). Bitstamp: institutional crypto in 100+ countries with MAS + MiCA licenses. 750K customers outside the US already.</div>
+      </div>
+      <div class="card" style="border-left:3px solid var(--red)">
+        <div style="font-size:1.4rem;margin-bottom:var(--space-2)">📰</div>
+        <div class="card-title" style="color:var(--red)">Latest — Apr 5, 2026</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.65">
+          <div style="margin-bottom:6px"><strong style="color:var(--red)">Macro headwind:</strong> Trump tariff shock hit April 3 — broad market selloff. HOOD last close $68.90 (Apr 2), trading below 200-day MA of ~$107 (36% below).</div>
+          <div style="margin-bottom:6px"><strong style="color:var(--gold)">Wolfe Research</strong> cut price target by ~30% citing crypto slump — still Buy. Near-term bottom ~$63.52 tested.</div>
+          <div style="margin-bottom:6px"><strong style="color:var(--green)">Q1 2026 Earnings:</strong> Set for <strong style="color:var(--text)">April 28, 2026</strong> after market close. Vlad Tenev + CFO Shiv Verma on video call at 2PM PT.</div>
+          <div><strong style="color:var(--blue)">Seasonal note:</strong> April historically HOOD's weakest month (avg −9.1%). May–July historically strongest stretch.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.4rem;margin-bottom:var(--space-2)">👶</div>
+        <div class="card-title">Trump Accounts + Family</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.65">US govt considering Robinhood as <em>trustee for Trump Accounts</em> — govt-funded $1K accounts for every newborn 2025–2028. Fidelity and Vanguard were not on the initial candidate list. Family investing launched in 2026.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario table -->
+  <div class="section">
+    <div class="section-title">2028 Price Target Scenarios</div>
+    <div class="chart-wrap">
+      <div style="margin-bottom:var(--space-4)">
+        <div class="scenario-row" style="font-size:var(--text-xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding-bottom:var(--space-2);">
+          <span>Scenario</span><span>Driver</span><span>Price</span><span>Return</span>
+        </div>
+        <div class="scenario-row">
+          <span class="badge badge-red">Bear</span>
+          <span style="font-size:var(--text-sm);color:var(--text-muted)">20x FY28E FCF (~$4.3B) — multiple compression, no new product contribution</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--red)">~$95</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--green)">+38%</span>
+        </div>
+        <div class="scenario-row">
+          <span class="badge badge-blue">Base</span>
+          <span style="font-size:var(--text-sm);color:var(--text-muted)">25x FY28E FCF — Banking + Prediction Markets scale as expected</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--blue)">~$119</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--green)">+72%</span>
+        </div>
+        <div class="scenario-row">
+          <span class="badge badge-green">Bull</span>
+          <span style="font-size:var(--text-sm);color:var(--text-muted)">35x FY28E FCF — super app re-rating, Clarity Act passes, international scales</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--green)">~$166</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--green)">+141%</span>
+        </div>
+        <div class="scenario-row">
+          <span class="badge badge-gold">Super Bull</span>
+          <span style="font-size:var(--text-sm);color:var(--text-muted)">Trump Account trustee + Clarity Act + Social flywheel + private markets take-off</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--gold)">$200+</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:var(--gold)">+190%+</span>
+        </div>
+      </div>
+      <div style="font-size:var(--text-xs);color:var(--text-faint)">Based on consensus FY2028E FCF of $4.27B and varying P/FCF multiples. ~900M diluted shares assumed.</div>
+    </div>
+  </div>
+
+  <!-- Key risks -->
+  <div class="section">
+    <div class="section-title">Key Risks</div>
+    <div class="grid-2">
+      <div class="card">
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:var(--text-sm);font-weight:600">Crypto & Trading Cyclicality</span><span style="font-size:var(--text-xs);color:var(--text-muted)">HIGH</span></div>
+            <div class="risk-bar"><div class="risk-fill" style="width:75%;background:var(--red)"></div></div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">Transaction revenue tied to market sentiment. Prolonged bear market compresses top-line.</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:var(--text-sm);font-weight:600">Regulatory Overhang</span><span style="font-size:var(--text-xs);color:var(--text-muted)">MEDIUM</span></div>
+            <div class="risk-bar"><div class="risk-fill" style="width:45%;background:var(--gold)"></div></div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">PFOF threat materially reduced. Clarity Act still pending. State-level risk remains.</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:var(--text-sm);font-weight:600">Multiple Derating</span><span style="font-size:var(--text-xs);color:var(--text-muted)">MEDIUM</span></div>
+            <div class="risk-bar"><div class="risk-fill" style="width:50%;background:var(--gold)"></div></div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">At 11.5x fwd P/S, growth must continue. Risk-off macro can compress multiples.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:var(--text-sm);font-weight:600">Expense Creep</span><span style="font-size:var(--text-xs);color:var(--text-muted)">LOW</span></div>
+            <div class="risk-bar"><div class="risk-fill" style="width:30%;background:var(--green)"></div></div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">2026 opex guidance of $2.6–2.725B (18% growth vs 51% revenue growth in 2025).</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:var(--text-sm);font-weight:600">Customer Retention</span><span style="font-size:var(--text-xs);color:var(--text-muted)">LOW</span></div>
+            <div class="risk-bar"><div class="risk-fill" style="width:25%;background:var(--green)"></div></div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">Positive net transfers from all major competitors for 8 consecutive quarters.</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:var(--text-sm);font-weight:600">Execution Risk</span><span style="font-size:var(--text-xs);color:var(--text-muted)">LOW-MED</span></div>
+            <div class="risk-bar"><div class="risk-fill" style="width:35%;background:var(--green)"></div></div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">Complex multi-product buildout. Management has consistently delivered ahead of pace.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">This dashboard is for research and informational purposes only. It does not constitute personalized financial advice or a solicitation to buy or sell securities. Past performance is not indicative of future results. All data as of April 2, 2026. Consult a qualified financial advisor before making investment decisions.</div>
+</div>
+
+<!-- ═══════════════════ THESIS TAB ═══════════════════ -->
+<div id="tab-thesis" class="tab-panel">
+  <div class="verdict-box">
+    <div class="verdict-title">Accumulate on Current Levels — Hold for the Super App Decade</div>
+    <div class="verdict-sub">Rating: Strong Buy / Accumulate · Target: $119 (base) – $166 (bull) · Horizon: 3+ Years · April 2, 2026 @ $68.90</div>
+  </div>
+
+  <div class="grid-2" style="gap:var(--space-6)">
+    <div>
+      <div class="thesis-section-title"><span class="dot"></span>The Core Thesis</div>
+      <div class="thesis-body">
+        <p>Robinhood has quietly engineered one of the most consequential pivots in consumer finance history. The company that went public in 2021 as a meme-stock gateway has rebuilt itself into a <strong>structurally profitable, structurally growing financial super app</strong> — and the market, still anchored to 2021 narratives, is pricing it as neither.</p>
+        <p>At $68.90, the stock sits <em>55% below its October 2025 high</em> despite delivering two consecutive years of 50%+ revenue growth, achieving a 56.4% adjusted EBITDA margin, and generating $1.62B in free cash flow. The decline is entirely explained by crypto weakness and macro de-risking. The business has not deteriorated. The thesis has only strengthened.</p>
+        <p>Our rating is <strong>Accumulate on current weakness, Hold for the next several years</strong> as Robinhood's financial super app comes into full focus. This is not a trade — it is a multi-year bet on the company most likely to become the primary financial relationship for the next generation of American and global investors.</p>
+      </div>
+
+      <div class="thesis-section-title"><span class="dot"></span>The ARPU Engine</div>
+      <div class="thesis-body">
+        <p>Robinhood's monetization story is misunderstood. Most coverage focuses on funded customer count (+7.1% YoY in Q4 2025) and misses the real growth driver: <em>ARPU expansion</em>. ARPU grew +16.5% YoY to <strong>$191 in Q4 2025</strong>, while assets under custody surged +67% to <strong>$322B</strong>. Net deposits hit a record <strong>$68B in FY2025</strong>. The average customer is entrusting dramatically more of their financial life to Robinhood every year.</p>
+        <p>The Gold subscription ecosystem is the monetization flywheel. Gold subscribers grew +58.3% to <strong>4.18M</strong>. Each Gold customer generates materially higher ARPU through margin lending, higher cash sweep rates, retirement matches, credit card rewards, and soon banking NII. As Gold penetration (currently 15.5% of funded customers) grows, the incremental economics compound without requiring new customer acquisition.</p>
+      </div>
+
+      <div class="thesis-section-title"><span class="dot"></span>The New Product Velocity</div>
+      <div class="thesis-body">
+        <p>What makes Robinhood exceptional is not any single product — it is the <strong>pace and quality of product launches</strong>:</p>
+        <p><strong>Banking:</strong> $0 → $1.5B deposits in 4 months (Nov 2025 → Mar 2026). Average balance of $15K per customer — primary account behavior. Over 50% of early Banking users enrolled in direct deposit.</p>
+        <p><strong>Strategies:</strong> $0 → $1.3B AUM in 7 months. Automated portfolio management with low friction. Complements TradePMR's $42.5B RIA AUC.</p>
+        <p><strong>Prediction Markets:</strong> $300M+ annualized run rate in first year. 12B+ event contracts traded in 2025. Now owning the infrastructure via MIAXdx (CFTC-licensed exchange + clearinghouse) with Susquehanna as liquidity partner.</p>
+        <p><strong>Gold Card:</strong> 600K holders, 5x growth in 2025. $10B in annualized spend. Credit card interest alone up 200% YoY in Q4 2025. Platinum Card launched March 2026 at $695/year — going directly after Amex Platinum.</p>
+        <p><strong>Robinhood Ventures (RVI):</strong> NYSE-listed closed-end fund launched March 2026. Portfolio: Stripe, Databricks, ElevenLabs, Airwallex, Revolut, Ramp. First retail vehicle for pre-IPO access with no accreditation requirement.</p>
+        <p>Shiv Verma at Q4 earnings: <em>"We are now up to 11 businesses with over $100M in annualized revenue."</em> Several more approaching that threshold.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="thesis-section-title"><span class="dot"></span>Regulatory Tailwinds</div>
+      <div class="thesis-body">
+        <p><strong>GENIUS Act (signed July 18, 2025):</strong> The US's first federal digital asset law. Establishes a framework for payment stablecoins. Robinhood already announced a stablecoin partnership with Paxos (US.DG). Legal certainty to build and distribute stablecoin infrastructure globally through Bitstamp.</p>
+        <p><strong>CLARITY Act (passed House 294-134, advancing in Senate):</strong> Would grant CFTC exclusive jurisdiction over digital commodity spot markets. Robinhood's MIAXdx is CFTC-designated — making it a structural beneficiary of the new regime. Crypto trading under CFTC rules is historically far more business-friendly than SEC.</p>
+        <p><strong>PFOF safe:</strong> New SEC Chair Paul Atkins withdrew the Gensler-era order competition rule and best execution proposals in June 2025. The existential PFOF risk that haunted HOOD from 2021-2023 has been eliminated.</p>
+        <p><strong>Trump Accounts:</strong> US government considering Robinhood as trustee for government-funded $1K investment accounts for every newborn 2025-2028. Fidelity and Vanguard reportedly not on the initial candidate list. If selected, this creates a permanent, government-supported customer onboarding pipeline for a generation.</p>
+      </div>
+
+      <div class="thesis-section-title"><span class="dot"></span>The Management Conviction Signal</div>
+      <div class="thesis-body">
+        <p>On March 24, 2026, Robinhood's board authorized a <strong>$1.5 billion share buyback</strong> — adding $1.1B in new capacity to existing programs. This represents ~10% of current market cap. New CFO Shiv Verma called it an "opportunity to secure long-term value at a price that doesn't reflect the company's genuine potential." Simultaneously, JPMorgan revolving credit was expanded from $2.65B to $3.25B.</p>
+        <p>Management does not spend $1.5B buying back shares at $69 because they expect the business to deteriorate. This is the clearest possible signal of intrinsic value confidence from people with full information.</p>
+      </div>
+
+      <div class="thesis-section-title"><span class="dot"></span>Why Robinhood Wins the Super App Race</div>
+      <div class="thesis-body">
+        <p>Multiple companies have tried to build financial super apps. Most have failed because they started with banking and tried to add investing. Robinhood has the rarest possible starting position: <em>27 million active investors</em> with real assets, real engagement, and real trust — and is adding banking, credit, advisory, private markets, and crypto infrastructure on top of that.</p>
+        <p>The switching cost grows with each product added. A user with their IRA, brokerage, Gold Card, banking, and credit card at Robinhood does not churn. The Gold subscription creates a psychological lock-in that traditional banks — who charge fees and give nothing back — cannot replicate. Every new product raises the value proposition and lowers the probability of attrition.</p>
+        <p>AI is Robinhood's silent margin expander: <em>75%+ of customer support cases resolved by AI</em>, including complex licensed brokerage cases. Nine-figure savings in 2025. Cortex AI assistant rolling out in 2026 as both a consumer product and a trading co-pilot for Legend users.</p>
+        <p>In 2-3 years, we believe the market will recognize that Robinhood's TAM is not "retail brokerage" — it is <em>the entire financial services relationship of the next generation</em>. At that point, the valuation will reflect something much closer to a fintech infrastructure business than a trading app. The re-rating, when it comes, will be substantial.</p>
+      </div>
+
+      <div class="thesis-section-title"><span class="dot"></span>Conclusion & Positioning</div>
+      <div class="thesis-body">
+        <p><strong>Accumulate on current weakness. Add on further dips. Hold through cycles.</strong> The thesis does not require a specific near-term catalyst — it requires patience as 11+ product lines compound and the market's perception of Robinhood converges with the business reality.</p>
+        <p>The bear case has a 38%+ floor from FCF growth alone (20x FY2028E FCF at $95). The base case returns +72%. The bull case returns +141%. The super bull scenario — Trump Account trustee selection, Clarity Act passage, Social flywheel, private markets scale — could deliver 200%+.</p>
+        <p><em>Thesis invalidators:</em> PFOF ban without offset, core customer attrition at scale, prolonged 3+ year crypto/equity bear, or management credibility loss. None of these are base case.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">This is research and analysis only, not personalized financial advice. Consult a qualified financial advisor before making investment decisions.</div>
+</div>
+
+<!-- ═══════════════════ FINANCIALS TAB ═══════════════════ -->
+<div id="tab-financials" class="tab-panel">
+  <div class="section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);flex-wrap:wrap;gap:var(--space-3)">
+      <div class="section-title" style="margin-bottom:0">Revenue, Net Income & Net Margin</div>
+      <div class="btn-group" id="finPeriodBtns">
+        <button class="btn-toggle active" onclick="switchFinancials('annual')">FY Since IPO</button>
+        <button class="btn-toggle" onclick="switchFinancials('quarterly')">Last 4 Quarters</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="finChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">KPI Growth Table</div>
+    <div class="grid-2">
+      <div class="chart-wrap">
+        <div class="chart-header"><div><div class="chart-title">Gold Subscribers</div><div class="chart-sub">Q1 2024 → Q4 2025</div></div></div>
+        <canvas id="goldSubChart" height="140"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div><div class="chart-title">Assets Under Custody (AUC)</div><div class="chart-sub">Total platform assets, $B</div></div></div>
+        <canvas id="aucChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">ARPU — Average Revenue Per User</div>
+    <div class="grid-2">
+      <div class="chart-wrap">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Quarterly ARPU ($)</div>
+            <div class="chart-sub">Q1 2022 → Q4 2025 · Trailing twelve months</div>
+          </div>
+          <span class="badge badge-accent">$191 Q4 2025</span>
+        </div>
+        <canvas id="arpuChart" height="160"></canvas>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:var(--space-4)">
+        <div>
+          <div class="kpi-label">The ARPU Story</div>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.7;margin-top:var(--space-2)">
+            ARPU is the most important metric in Robinhood's financial story. User count growth is modest (+7% YoY). But <strong style="color:var(--text)">ARPU has expanded 5x since Q1 2022</strong> — from ~$38 to $191. This is the super app thesis in one number: the same customers are doing far more financial business on the platform every year.
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="grid-2" style="gap:var(--space-3)">
+          <div class="stress-kpi" style="background:var(--surface-3)"><div class="stress-kpi-label">Q4 2022</div><div class="stress-kpi-val" style="color:var(--red);font-size:var(--text-md)">$38</div></div>
+          <div class="stress-kpi" style="background:var(--surface-3)"><div class="stress-kpi-label">Q4 2023</div><div class="stress-kpi-val" style="color:var(--gold);font-size:var(--text-md)">$81</div></div>
+          <div class="stress-kpi" style="background:var(--surface-3)"><div class="stress-kpi-label">Q4 2024</div><div class="stress-kpi-val" style="color:var(--blue);font-size:var(--text-md)">$164</div></div>
+          <div class="stress-kpi" style="background:rgba(0,212,177,0.05);border:1px solid var(--accent-border)"><div class="stress-kpi-label">Q4 2025</div><div class="stress-kpi-val" style="color:var(--accent);font-size:var(--text-md)">$191</div></div>
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.65">
+          Key drivers of ARPU expansion: Gold subscription adoption (4.18M at $5/mo), higher cash sweep balances earning NII, options volume growth, credit card interest income, and now Banking NII — each layering incremental revenue on the same customer base without meaningful CAC.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Robinhood Banking — Deposit Growth Milestone</div>
+    <div class="grid-2">
+      <div class="chart-wrap">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Banking Deposits ($B)</div>
+            <div class="chart-sub">Nov 2025 launch → March 2026 · Fastest deposit ramp in US fintech history</div>
+          </div>
+          <span class="badge badge-accent">$1.5B reached</span>
+        </div>
+        <canvas id="bankingDepositChart" height="150"></canvas>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:var(--space-4)">
+        <div>
+          <div class="kpi-label">What the Numbers Mean</div>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.7;margin-top:var(--space-2)">
+            Average deposit per customer sits at <strong style="color:var(--text)">$15,000</strong> — not a side account, but a <strong style="color:var(--accent)">primary banking relationship</strong>. Over 50% of early customers enrolled in direct deposit.
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="grid-2" style="gap:var(--space-3)">
+          <div class="stress-kpi" style="background:var(--surface-3)"><div class="stress-kpi-label">Dec 2025</div><div class="stress-kpi-val" style="color:var(--text);font-size:var(--text-md)">$100M</div></div>
+          <div class="stress-kpi" style="background:var(--surface-3)"><div class="stress-kpi-label">Jan 2026</div><div class="stress-kpi-val" style="color:var(--text);font-size:var(--text-md)">$300M</div></div>
+          <div class="stress-kpi" style="background:var(--surface-3)"><div class="stress-kpi-label">Feb 2026</div><div class="stress-kpi-val" style="color:var(--blue);font-size:var(--text-md)">~$700M</div></div>
+          <div class="stress-kpi" style="background:rgba(0,212,177,0.05);border:1px solid var(--accent-border)"><div class="stress-kpi-label">Mar 30, 2026</div><div class="stress-kpi-val" style="color:var(--accent);font-size:var(--text-md)">$1.5B</div></div>
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.65">
+          At current trajectory (~$100M+/week) and scaling rollout to all 4.18M Gold subscribers, a <strong style="color:var(--text)">$5–10B deposit base by 2027</strong> is plausible. At 3% NIM that's <strong style="color:var(--green)">$150–300M in annual NII</strong> from banking alone.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Income Statement Detail</div>
+    <div class="chart-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th class="th-right">Revenue</th>
+            <th class="th-right">Gross Profit</th>
+            <th class="th-right">EBITDA</th>
+            <th class="th-right">Net Income</th>
+            <th class="th-right">FCF</th>
+            <th class="th-right">EPS</th>
+            <th class="th-right">Net Margin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>FY2021</td><td class="num">$1.81B</td><td class="num">—</td><td class="num">—</td><td class="num" style="color:var(--red)">$(3.7B)</td><td class="num" style="color:var(--red)">$(968M)</td><td class="num" style="color:var(--red)">$(4.27)</td><td class="num" style="color:var(--red)">—</td></tr>
+          <tr><td>FY2022</td><td class="num">$1.36B</td><td class="num">—</td><td class="num">—</td><td class="num" style="color:var(--red)">$(1.0B)</td><td class="num" style="color:var(--red)">$(909M)</td><td class="num" style="color:var(--red)">$(1.17)</td><td class="num" style="color:var(--red)">—</td></tr>
+          <tr><td>FY2023</td><td class="num">$1.86B</td><td class="num">—</td><td class="num">—</td><td class="num" style="color:var(--red)">$(541M)</td><td class="num">$1.16B</td><td class="num" style="color:var(--red)">$(0.61)</td><td class="num" style="color:var(--red)">—</td></tr>
+          <tr><td>FY2024</td><td class="num" style="color:var(--green)">$2.95B</td><td class="num">—</td><td class="num">$1.4B</td><td class="num" style="color:var(--green)">$1.41B</td><td class="num" style="color:var(--red)">$(170M)</td><td class="num" style="color:var(--green)">$1.56</td><td class="num" style="color:var(--green)">47.8%</td></tr>
+          <tr style="background:rgba(0,212,177,0.04)"><td><strong>FY2025</strong></td><td class="num" style="color:var(--green)"><strong>$4.47B</strong></td><td class="num" style="color:var(--green)"><strong>$3.28B</strong></td><td class="num" style="color:var(--green)"><strong>$2.19B</strong></td><td class="num" style="color:var(--green)"><strong>$1.88B</strong></td><td class="num" style="color:var(--green)"><strong>$1.62B</strong></td><td class="num" style="color:var(--green)"><strong>$2.12</strong></td><td class="num" style="color:var(--green)"><strong>42.1%</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Quarterly Revenue by Segment (FY2025)</div>
+    <div class="chart-wrap">
+      <canvas id="segChart" height="100"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Balance Sheet Snapshot — FY2025</div>
+    <div class="grid-4">
+      <div class="kpi kpi-green">
+        <div class="kpi-label">Cash & Equivalents</div>
+        <div class="kpi-value">$4.26B</div>
+      </div>
+      <div class="kpi kpi-blue">
+        <div class="kpi-label">Total Equity</div>
+        <div class="kpi-value">$9.15B</div>
+      </div>
+      <div class="kpi kpi-gold">
+        <div class="kpi-label">Total Debt*</div>
+        <div class="kpi-value">$15.4B</div>
+        <div class="kpi-sub">*Includes customer margin borrowings</div>
+      </div>
+      <div class="kpi kpi-accent">
+        <div class="kpi-label">SBC (FY2025)</div>
+        <div class="kpi-value">$305M</div>
+        <div class="kpi-sub">6.8% of revenue</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ STRESS TEST TAB ═══════════════════ -->
+<div id="tab-stress" class="tab-panel">
+
+  <!-- ── INTERACTIVE STRESS TEST ── -->
+  <div class="section">
+    <div class="section-title">Interactive Earnings Stress Test</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:var(--space-3)">Revenue Shocks — Adjust Each Lever</div>
+        <div style="margin-bottom:var(--space-4)">
+          <div style="font-size:var(--text-xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:var(--space-2)">Quick Presets</div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2)">
+            <button class="preset-btn" onclick="applyPreset('base')" style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);color:#60a5fa;">📊 Base Case</button>
+            <button class="preset-btn" onclick="applyPreset('crypto_winter')" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;">❄️ Crypto Winter</button>
+            <button class="preset-btn" onclick="applyPreset('rate_hike')" style="background:rgba(0,212,177,0.1);border:1px solid rgba(0,212,177,0.25);color:#00d4b1;">📈 Rate Hike Boom</button>
+            <button class="preset-btn" onclick="applyPreset('bear_mkt')" style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:#f87171;">🔻 Bear Market</button>
+            <button class="preset-btn" onclick="applyPreset('pfof_ban')" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);color:#a78bfa;">⚖️ PFOF Ban</button>
+            <button class="preset-btn" onclick="applyPreset('citrini_bear')" style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);color:#f87171;">🐻 Citrini 2028</button>
+            <button class="preset-btn" onclick="applyPreset('super_bull')" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#22c55e;">🚀 Super App Bull</button>
+          </div>
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Options Revenue (Base: $1.25B/yr)</span><span class="slider-val" id="optVal">−0%</span></div>
+          <input type="range" id="optSlider" min="-80" max="50" value="0" oninput="runStressTest()">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Crypto Revenue (Base: $884M/yr)</span><span class="slider-val" id="cryptoVal">−0%</span></div>
+          <input type="range" id="cryptoSlider" min="-90" max="100" value="0" oninput="runStressTest()">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Net Interest Revenue (Base: $1.51B/yr)</span><span class="slider-val" id="nirVal">+0%</span></div>
+          <input type="range" id="nirSlider" min="-40" max="60" value="0" oninput="runStressTest()">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Equities Revenue (Base: $302M/yr)</span><span class="slider-val" id="eqVal">+0%</span></div>
+          <input type="range" id="eqSlider" min="-60" max="80" value="0" oninput="runStressTest()">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Other / Subscriptions (Base: $596M/yr)</span><span class="slider-val" id="subVal">+0%</span></div>
+          <input type="range" id="subSlider" min="-20" max="100" value="0" oninput="runStressTest()">
+        </div>
+        <div class="slider-wrap" style="margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px solid var(--border)">
+          <div class="slider-label"><span>Operating Expense Growth (Base: $2.66B/yr)</span><span class="slider-val" id="opexVal">+0%</span></div>
+          <input type="range" id="opexSlider" min="-10" max="50" value="0" oninput="runStressTest()">
+        </div>
+        <button onclick="resetStressSliders()" style="margin-top:var(--space-3);padding:6px 14px;background:var(--surface-3);border:1px solid var(--border);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--text-muted);cursor:pointer">↺ Reset All</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Projected Outcomes</div>
+        <div class="stress-result-grid">
+          <div class="stress-kpi"><div class="stress-kpi-label">Revenue</div><div class="stress-kpi-val" id="sr-rev" style="color:var(--green)">$4.54B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Gross Profit</div><div class="stress-kpi-val" id="sr-gp" style="color:var(--green)">$3.33B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">EBITDA</div><div class="stress-kpi-val" id="sr-ebitda" style="color:var(--green)">$1.88B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Net Income</div><div class="stress-kpi-val" id="sr-ni" style="color:var(--green)">$1.60B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">FCF</div><div class="stress-kpi-val" id="sr-fcf" style="color:var(--green)">$1.62B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Net Margin</div><div class="stress-kpi-val" id="sr-nm" style="color:var(--green)">35.2%</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">FCF Margin</div><div class="stress-kpi-val" id="sr-fcfm" style="color:var(--green)">35.7%</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Still Profitable?</div><div class="stress-kpi-val" id="sr-profit" style="color:var(--green)">YES ✓</div></div>
+        </div>
+        <div id="stressWarning" style="margin-top:var(--space-4);padding:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-xs);display:none"></div>
+        <div style="margin-top:var(--space-5)">
+          <canvas id="stressBarChart" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BALANCE SHEET STRESS TEST ── -->
+  <div class="section">
+    <div class="section-title">Balance Sheet Resilience Test</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:var(--space-3)">Shock Levers — Balance Sheet</div>
+        <div style="margin-bottom:var(--space-4)">
+          <div style="font-size:var(--text-xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:var(--space-2)">Quick Presets</div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2)">
+            <button class="preset-btn" onclick="applyBsPreset('base')" style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);color:#60a5fa;">📊 Base Case</button>
+            <button class="preset-btn" onclick="applyBsPreset('margin_call')" style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:#f87171;">💥 Margin Call Crisis</button>
+            <button class="preset-btn" onclick="applyBsPreset('market_crash')" style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);color:#f87171;">📉 Market Crash −40%</button>
+            <button class="preset-btn" onclick="applyBsPreset('bank_run')" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;">🏦 Banking Run</button>
+            <button class="preset-btn" onclick="applyBsPreset('bull_mkt')" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#22c55e;">🚀 Bull Market +50%</button>
+          </div>
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Margin Book Contraction (Base: $16.8B)</span><span class="slider-val" id="mbVal">0%</span></div>
+          <input type="range" id="mbSlider" min="-80" max="50" value="0" oninput="runBalanceStress()">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Cash Sweep Outflows (Base: $32.8B)</span><span class="slider-val" id="csVal">0%</span></div>
+          <input type="range" id="csSlider" min="-60" max="30" value="0" oninput="runBalanceStress()">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>AUC Market Decline (Base: $322B)</span><span class="slider-val" id="aucBsVal">0%</span></div>
+          <input type="range" id="aucBsSlider" min="-60" max="50" value="0" oninput="runBalanceStress()">
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Banking Deposit Withdrawal (Base: $1.5B)</span><span class="slider-val" id="bankVal">0%</span></div>
+          <input type="range" id="bankSlider" min="-80" max="200" value="0" oninput="runBalanceStress()">
+        </div>
+        <button onclick="resetBalanceSliders()" style="margin-top:var(--space-3);padding:6px 14px;background:var(--surface-3);border:1px solid var(--border);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--text-muted);cursor:pointer">↺ Reset All</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Balance Sheet Under Stress</div>
+        <div class="stress-result-grid">
+          <div class="stress-kpi"><div class="stress-kpi-label">Cash Buffer</div><div class="stress-kpi-val" id="bs-cash" style="color:var(--green)">$4.26B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Margin Book</div><div class="stress-kpi-val" id="bs-mb" style="color:var(--green)">$16.8B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Cash Sweep</div><div class="stress-kpi-val" id="bs-cs" style="color:var(--green)">$32.8B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Total AUC</div><div class="stress-kpi-val" id="bs-auc" style="color:var(--green)">$322B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Banking Deposits</div><div class="stress-kpi-val" id="bs-bank" style="color:var(--green)">$1.5B</div></div>
+          <div class="stress-kpi"><div class="stress-kpi-label">Solvency Risk</div><div class="stress-kpi-val" id="bs-solvency" style="color:var(--green)">LOW</div></div>
+        </div>
+        <div style="margin-top:var(--space-4);font-size:var(--text-xs);color:var(--text-muted);line-height:1.65" id="bs-commentary">
+          Robinhood's $4.26B cash position plus $3.25B JPMorgan revolving credit provides $7.5B+ in immediate liquidity. The company has no near-term debt maturities that would threaten solvency under any modeled scenario.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FCF FLOOR CHART ── -->
+  <div class="section">
+    <div class="section-title">FCF Floor — Scenario Comparison</div>
+    <div class="chart-wrap">
+      <canvas id="stressChart" height="90"></canvas>
+    </div>
+    <div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:var(--space-2)">Even in the most severe modeled scenario (near-total crypto collapse + PFOF ban), Robinhood retains positive FCF. The $4.26B cash balance, $3.25B JPMorgan facility, and $1.5B buyback authorization provide liquidity to weather any realistic storm.</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── CITRINI 2028 BEAR SCENARIO ── -->
+  <div class="section">
+    <div class="section-title">🐻 Citrini 2028 — The Bear Scenario</div>
+    <div class="card" style="border:1px solid rgba(248,113,113,0.25);background:linear-gradient(135deg,rgba(248,113,113,0.04),rgba(248,113,113,0.01))">
+      <div style="display:flex;align-items:start;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-5)">
+        <div style="flex:1;min-width:280px">
+          <div style="font-size:var(--text-md);font-weight:700;color:var(--red);margin-bottom:var(--space-3)">The Macro Thesis</div>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.75">
+            <p>The Citrini 2028 scenario envisions a world where <strong style="color:var(--text)">nominal GDP continues to grow</strong>, but the gains are <strong style="color:var(--text)">distributed almost entirely to capital</strong>, not labor. AI-driven automation eliminates millions of white-collar and service jobs, causing structural unemployment to rise even as GDP headline numbers look fine.</p>
+            <p style="margin-top:var(--space-3)">Retail investors — Robinhood's core user base — <strong style="color:var(--red)">need to sell assets to survive</strong>. Net deposits turn negative. Banking deposits are withdrawn. Trading volumes collapse as household liquidity evaporates. ARPU contracts sharply. The super app becomes a withdrawal mechanism rather than a wealth-building platform.</p>
+            <p style="margin-top:var(--space-3)">This is not the base case — it is the scenario that stress-tests whether Robinhood can survive a world where its users are economically marginalized.</p>
+          </div>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <div style="font-size:var(--text-xs);font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:var(--space-3)">Key Macro Assumptions</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+            <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3);font-size:var(--text-xs);color:var(--text-muted)"><strong style="color:var(--text)">GDP Growth:</strong> +2–3% nominal — but driven by corporate profits, not wages</div>
+            <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3);font-size:var(--text-xs);color:var(--text-muted)"><strong style="color:var(--red)">Unemployment:</strong> 8–12% structural — AI displaces knowledge workers at scale</div>
+            <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3);font-size:var(--text-xs);color:var(--text-muted)"><strong style="color:var(--red)">Net Deposits:</strong> Turn negative — users withdrawing $30–50B/yr to fund living expenses</div>
+            <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3);font-size:var(--text-xs);color:var(--text-muted)"><strong style="color:var(--red)">Trading Volumes:</strong> −40 to −60% — household liquidity crisis suppresses activity</div>
+            <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3);font-size:var(--text-xs);color:var(--text-muted)"><strong style="color:var(--gold)">Crypto:</strong> Mixed — flight to BTC as inflation hedge vs. forced liquidation pressure</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-bottom:var(--space-5)">
+        <div class="stress-kpi" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.15)">
+          <div class="stress-kpi-label">Revenue (2028 Bear)</div>
+          <div class="stress-kpi-val" style="color:var(--red)">$2.8–3.5B</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">vs. $4.47B FY2025</div>
+        </div>
+        <div class="stress-kpi" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.15)">
+          <div class="stress-kpi-label">FCF (2028 Bear)</div>
+          <div class="stress-kpi-val" style="color:var(--gold)">$600M–1.0B</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">Still positive — business survives</div>
+        </div>
+        <div class="stress-kpi" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.15)">
+          <div class="stress-kpi-label">AUC (2028 Bear)</div>
+          <div class="stress-kpi-val" style="color:var(--red)">$120–180B</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">Market decline + net outflows</div>
+        </div>
+        <div class="stress-kpi" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.15)">
+          <div class="stress-kpi-label">Implied HOOD Price</div>
+          <div class="stress-kpi-val" style="color:var(--gold)">$22–40</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">15–20x bear FCF</div>
+        </div>
+      </div>
+
+      <div style="margin-top:var(--space-4)">
+        <div class="chart-title" style="margin-bottom:var(--space-4)">Revenue Waterfall — Citrini Bear vs. Base vs. Bull (FY2028)</div>
+        <canvas id="citriniChart" height="90"></canvas>
+      </div>
+
+      <div style="margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px solid rgba(248,113,113,0.15)">
+        <div style="font-size:var(--text-sm);font-weight:600;color:var(--text);margin-bottom:var(--space-3)">Why Robinhood Might Still Survive This Scenario</div>
+        <div class="grid-3" style="gap:var(--space-3)">
+          <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3)">
+            <div style="font-size:var(--text-xs);font-weight:600;color:var(--teal);margin-bottom:4px">NET INTEREST RESILIENCE</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted)">High unemployment typically means high interest rates. Robinhood's NII (39% of FY2025 revenue) benefits from elevated rates — partially offsetting volume declines.</div>
+          </div>
+          <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3)">
+            <div style="font-size:var(--text-xs);font-weight:600;color:var(--gold);margin-bottom:4px">GOLD SUBSCRIPTION STICKINESS</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted)">At $5/month, Gold is the last subscription users cancel. Even at 50% Gold retention (2M subscribers), subscription revenue remains $120M+ annually.</div>
+          </div>
+          <div style="background:var(--surface-3);border-radius:var(--radius-md);padding:var(--space-3)">
+            <div style="font-size:var(--text-xs);font-weight:600;color:var(--purple);margin-bottom:4px">COST STRUCTURE FLEXIBILITY</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted)">Robinhood's AI-first cost structure means it can cut opex rapidly. In 2022 it cut 30% of headcount and survived. The same playbook is available again.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ VALUATION TAB ═══════════════════ -->
+<!-- ═══════════════════ VALUATION TAB ═══════════════════ -->
+<div id="tab-valuation" class="tab-panel">
+  <div class="section">
+    <div class="section-title">Current Valuation Multiples</div>
+    <div class="grid-4">
+      <div class="kpi kpi-blue"><div class="kpi-label">TTM P/E</div><div class="kpi-value">33.6x</div><div class="kpi-sub">On GAAP EPS of $2.05</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">Fwd P/S (FY26E)</div><div class="kpi-value">11.5x</div><div class="kpi-sub">On $5.39B consensus rev</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">Fwd P/FCF (FY26E)</div><div class="kpi-value">24.4x</div><div class="kpi-sub">On $2.54B est. FCF</div></div>
+      <div class="kpi kpi-gold"><div class="kpi-label">EV/EBITDA (FY25)</div><div class="kpi-value">~28x</div><div class="kpi-sub">On $2.19B EBITDA</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">DCF Model — 5-Year Free Cash Flow</div>
+    <div class="chart-wrap">
+      <div class="grid-2" style="gap:var(--space-5)">
+        <div>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-4)">Assumptions: WACC 10%, Terminal growth 3%, shares outstanding ~900M</div>
+          <table class="data-table">
+            <thead><tr><th>Year</th><th class="th-right">FCF (Base)</th><th class="th-right">FCF (Bull)</th><th class="th-right">FCF (Bear)</th></tr></thead>
+            <tbody>
+              <tr><td>FY2025A</td><td class="num" style="color:var(--green)">$1.62B</td><td class="num" style="color:var(--green)">$1.62B</td><td class="num" style="color:var(--green)">$1.62B</td></tr>
+              <tr><td>FY2026E</td><td class="num">$2.54B</td><td class="num">$2.80B</td><td class="num">$2.10B</td></tr>
+              <tr><td>FY2027E</td><td class="num">$3.49B</td><td class="num">$4.00B</td><td class="num">$2.60B</td></tr>
+              <tr><td>FY2028E</td><td class="num">$4.27B</td><td class="num">$5.50B</td><td class="num">$3.00B</td></tr>
+              <tr><td>FY2029E</td><td class="num">$5.10B</td><td class="num">$7.00B</td><td class="num">$3.40B</td></tr>
+              <tr><td>FY2030E</td><td class="num">$6.00B</td><td class="num">$9.00B</td><td class="num">$3.80B</td></tr>
+              <tr style="border-top:2px solid var(--border)"><td><strong>DCF Value/Share</strong></td><td class="num" style="color:var(--blue);font-weight:700">~$115</td><td class="num" style="color:var(--green);font-weight:700">~$165</td><td class="num" style="color:var(--gold);font-weight:700">~$75</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <canvas id="dcfChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Relative Valuation vs. Peers</div>
+    <div class="chart-wrap">
+      <table class="data-table">
+        <thead><tr><th>Company</th><th>Ticker</th><th class="th-right">Rev Growth</th><th class="th-right">FCF Margin</th><th class="th-right">P/E (Fwd)</th><th class="th-right">P/S (Fwd)</th><th class="th-right">EV/EBITDA</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(0,212,177,0.04)"><td><strong>Robinhood</strong></td><td class="num" style="color:var(--accent)"><strong>HOOD</strong></td><td class="num" style="color:var(--green)"><strong>+52%</strong></td><td class="num" style="color:var(--green)"><strong>36.3%</strong></td><td class="num"><strong>33.6x</strong></td><td class="num"><strong>11.5x</strong></td><td class="num"><strong>~28x</strong></td></tr>
+          <tr><td>Coinbase</td><td class="num">COIN</td><td class="num" style="color:var(--gold)">+36%</td><td class="num">~22%</td><td class="num">28x</td><td class="num">9x</td><td class="num">~22x</td></tr>
+          <tr><td>Interactive Brokers</td><td class="num">IBKR</td><td class="num">+15%</td><td class="num">~40%</td><td class="num">22x</td><td class="num">8x</td><td class="num">~18x</td></tr>
+          <tr><td>SoFi Technologies</td><td class="num">SOFI</td><td class="num">+20%</td><td class="num">~5%</td><td class="num">40x</td><td class="num">3x</td><td class="num">~35x</td></tr>
+          <tr><td>PayPal</td><td class="num">PYPL</td><td class="num">+7%</td><td class="num">~20%</td><td class="num">15x</td><td class="num">3x</td><td class="num">~13x</td></tr>
+          <tr><td>Block (Square)</td><td class="num">XYZ</td><td class="num">+12%</td><td class="num">~8%</td><td class="num">30x</td><td class="num">2x</td><td class="num">~20x</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:var(--space-3)">HOOD trades at a premium P/E but is the only company in this peer group growing revenue 50%+ with expanding FCF margins above 36%. Growth-adjusted (PEG ratio), HOOD compares favorably to all peers.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Price-to-X Multiples Over Time</div>
+    <div class="chart-wrap">
+      <canvas id="multChart" height="100"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Asset-Based Valuation</div>
+    <div class="chart-wrap">
+      <div class="grid-2">
+        <div>
+          <div class="card-title">Book Value Analysis</div>
+          <table class="data-table">
+            <tbody>
+              <tr><td style="color:var(--text-muted)">Total Stockholders' Equity</td><td class="num">$9.15B</td></tr>
+              <tr><td style="color:var(--text-muted)">Shares Outstanding</td><td class="num">~900M</td></tr>
+              <tr><td style="color:var(--text-muted)">Book Value per Share</td><td class="num">~$10.17</td></tr>
+              <tr><td style="color:var(--text-muted)">Current P/B Ratio</td><td class="num" style="color:var(--gold)">6.77x</td></tr>
+              <tr><td style="color:var(--text-muted)">Cash per Share</td><td class="num" style="color:var(--green)">$4.73</td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:var(--space-3)">High P/B is expected for a capital-light software/fintech business. The relevant assets are the franchise, brand, regulatory licenses, and customer relationships — none of which appear on the balance sheet.</div>
+        </div>
+        <div>
+          <div class="card-title">Sum-of-Parts Estimate (Illustrative)</div>
+          <table class="data-table">
+            <tbody>
+              <tr><td style="color:var(--text-muted)">Brokerage + Options (6x Revenue)</td><td class="num">$18B</td></tr>
+              <tr><td style="color:var(--text-muted)">Crypto + Bitstamp (8x Revenue)</td><td class="num">$12B</td></tr>
+              <tr><td style="color:var(--text-muted)">Net Interest / Banking (15x Revenue)</td><td class="num">$15B</td></tr>
+              <tr><td style="color:var(--text-muted)">Gold Subscription (20x Revenue)</td><td class="num">$10B</td></tr>
+              <tr><td style="color:var(--text-muted)">Prediction Markets (30x Revenue)</td><td class="num">$9B</td></tr>
+              <tr><td style="color:var(--text-muted)">Private Markets + RVI (optionality)</td><td class="num">$5B</td></tr>
+              <tr><td style="color:var(--text-muted)">International Licenses</td><td class="num">$5B</td></tr>
+              <tr><td style="color:var(--text-muted)">Net Cash</td><td class="num" style="color:var(--green)">$4.26B</td></tr>
+              <tr style="border-top:2px solid var(--border);font-weight:700"><td>Sum of Parts</td><td class="num" style="color:var(--accent)">~$78B</td></tr>
+              <tr><td style="color:var(--text-muted)">Implied per Share</td><td class="num" style="color:var(--accent)">~$87</td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:var(--space-3)">Illustrative SoP suggests $87/share intrinsic value at conservative multiples — 26% above current price. Does not assign value to Cortex AI, Social, Trump Accounts, or Robinhood Chain.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ANALYSTS TAB ═══════════════════ -->
+<div id="tab-analysts" class="tab-panel">
+  <div class="section">
+    <div class="section-title">Analyst Consensus</div>
+    <div class="grid-4">
+      <div class="kpi kpi-green"><div class="kpi-label">Consensus Rating</div><div class="kpi-value" style="font-size:var(--text-lg)">Strong Buy</div><div class="kpi-sub">12 Buy / 3 Hold / 0 Sell</div></div>
+      <div class="kpi kpi-gold"><div class="kpi-label">Average Price Target</div><div class="kpi-value">$130.07</div><div class="kpi-sub kpi-up">+88.8% upside</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">Median Price Target</div><div class="kpi-value">$130</div><div class="kpi-sub">Range: $90–$180</div></div>
+      <div class="kpi kpi-accent"><div class="kpi-label">Bull Target</div><div class="kpi-value">$180</div><div class="kpi-sub kpi-up">+161% from here</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Price Target Distribution</div>
+    <div class="chart-wrap">
+      <canvas id="ptChart" height="100"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Analyst Ratings & Targets</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-3)">
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Loop Capital</div><div class="analyst-name">Recent</div></div>
+          <span class="badge badge-green">Buy</span>
+        </div>
+        <div class="analyst-target">$160–$180</div>
+        <div class="analyst-upside">Sees HOOD as "Amazon of Finance"</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Barclays</div><div class="analyst-name">Benjamin Budish</div></div>
+          <span class="badge badge-green">Overweight</span>
+        </div>
+        <div class="analyst-target">$171</div>
+        <div class="analyst-upside">Dec 2025 · +148% upside</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">B of A Securities</div><div class="analyst-name">Craig Siegenthaler</div></div>
+          <span class="badge badge-green">Buy</span>
+        </div>
+        <div class="analyst-target">$154</div>
+        <div class="analyst-upside">Dec 2025 · +123% upside</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Cantor Fitzgerald</div><div class="analyst-name">Brett Knoblauch</div></div>
+          <span class="badge badge-green">Overweight</span>
+        </div>
+        <div class="analyst-target">$152</div>
+        <div class="analyst-upside">Dec 2025 · +121% upside</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Mizuho</div><div class="analyst-name">Dan Dolev</div></div>
+          <span class="badge badge-green">Outperform</span>
+        </div>
+        <div class="analyst-target">$145</div>
+        <div class="analyst-upside">Sep 2025 · Cites prediction markets as $1B pillar</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Keybanc</div><div class="analyst-name">Alex Markgraff</div></div>
+          <span class="badge badge-green">Overweight</span>
+        </div>
+        <div class="analyst-target">$135</div>
+        <div class="analyst-upside">Sep 2025 · +96% upside</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Bernstein</div><div class="analyst-name">Gautam Chhugani</div></div>
+          <span class="badge badge-green">Outperform</span>
+        </div>
+        <div class="analyst-target">$130</div>
+        <div class="analyst-upside">Mar 30, 2026 · Maintained through dip</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Piper Sandler</div><div class="analyst-name">Patrick Moley</div></div>
+          <span class="badge badge-green">Overweight</span>
+        </div>
+        <div class="analyst-target">$120</div>
+        <div class="analyst-upside">Sep 2025 · +74% upside</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Goldman Sachs</div><div class="analyst-name">Will Nance</div></div>
+          <span class="badge badge-green">Buy</span>
+        </div>
+        <div class="analyst-target">$91</div>
+        <div class="analyst-upside">Mar 26, 2026 · Trimmed on macro, thesis intact</div>
+      </div>
+      <div class="analyst-card">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div class="analyst-firm">Needham</div><div class="analyst-name">John Todaro</div></div>
+          <span class="badge badge-green">Buy</span>
+        </div>
+        <div class="analyst-target">$90</div>
+        <div class="analyst-upside">Apr 2, 2026 · +31% upside even at lowest target</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Upside to Targets — Visual</div>
+    <div class="chart-wrap">
+      <canvas id="upsideChart" height="140"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ OWNERSHIP TAB ═══════════════════ -->
+<div id="tab-ownership" class="tab-panel">
+  <div class="section">
+    <div class="section-title">Share Structure</div>
+    <div class="grid-4">
+      <div class="kpi kpi-accent"><div class="kpi-label">Total Shares Out.</div><div class="kpi-value">~900M</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">Float</div><div class="kpi-value">~550M</div><div class="kpi-sub">~61% of shares</div></div>
+      <div class="kpi kpi-gold"><div class="kpi-label">Insider Owned</div><div class="kpi-value">~35%</div><div class="kpi-sub">Class B super-voting</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">Institutional</div><div class="kpi-value">~52%</div><div class="kpi-sub">Of float</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Voting Power Structure</div>
+    <div class="grid-2">
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">Economic Ownership</div></div>
+        <canvas id="ownershipChart" height="200"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">Voting Power</div></div>
+        <canvas id="votingChart" height="200"></canvas>
+      </div>
+    </div>
+    <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:var(--space-3)">Robinhood has a dual-class structure. Class B shares (held by founders Vlad Tenev and Baiju Bhatt) carry 10 votes per share vs. 1 vote for Class A. Founders retain voting control despite lower economic ownership, which is standard for founder-led tech companies.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Top Institutional Holders</div>
+    <div class="chart-wrap">
+      <div id="institutionList">
+        <div class="owner-row"><span class="owner-name">ARK Investment Management (Cathie Wood)</span><span class="owner-pct">8.2%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:82%;background:var(--accent)"></div></div></div></div>
+        <div class="owner-row"><span class="owner-name">Vanguard Group</span><span class="owner-pct">6.1%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:61%;background:var(--blue)"></div></div></div></div>
+        <div class="owner-row"><span class="owner-name">Fidelity (FMR LLC)</span><span class="owner-pct">5.8%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:58%;background:var(--blue)"></div></div></div></div>
+        <div class="owner-row"><span class="owner-name">BlackRock</span><span class="owner-pct">4.9%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:49%;background:var(--blue)"></div></div></div></div>
+        <div class="owner-row"><span class="owner-name">State Street</span><span class="owner-pct">3.2%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:32%;background:var(--blue)"></div></div></div></div>
+        <div class="owner-row"><span class="owner-name">Morgan Stanley</span><span class="owner-pct">2.8%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:28%;background:var(--purple)"></div></div></div></div>
+        <div class="owner-row"><span class="owner-name">Goldman Sachs</span><span class="owner-pct">1.9%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:19%;background:var(--purple)"></div></div></div></div>
+        <div class="owner-row"><span class="owner-name">Other Institutional</span><span class="owner-pct">~24%</span><div class="owner-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:62%;background:var(--border-light)"></div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Buyback Program</div>
+    <div class="card" style="border:1px solid var(--accent-border)">
+      <div class="grid-3" style="gap:var(--space-4)">
+        <div><div class="kpi-label">Authorization Date</div><div style="font-size:var(--text-md);font-weight:700;color:var(--text)">March 24, 2026</div></div>
+        <div><div class="kpi-label">Total Authorized</div><div style="font-size:var(--text-md);font-weight:700;color:var(--accent)">$1.5 Billion</div></div>
+        <div><div class="kpi-label">New Capacity</div><div style="font-size:var(--text-md);font-weight:700;color:var(--green)">$1.1 Billion</div></div>
+        <div><div class="kpi-label">Duration</div><div style="font-size:var(--text-md);font-weight:700;color:var(--text)">~3 Years</div></div>
+        <div><div class="kpi-label">% of Mkt Cap</div><div style="font-size:var(--text-md);font-weight:700;color:var(--gold)">~10%</div></div>
+        <div><div class="kpi-label">JPMorgan Credit Facility</div><div style="font-size:var(--text-md);font-weight:700;color:var(--text)">$3.25B (↑ from $2.65B)</div></div>
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:var(--text-sm);color:var(--text-muted)">CFO Shiv Verma characterized the buyback as an "opportunity to secure long-term value at a price that doesn't reflect the company's genuine potential." This is the strongest signal management can send to the market about their view of intrinsic value.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAP TAB ═══════════════════ -->
+<div id="tab-map" class="tab-panel">
+  <div class="section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);flex-wrap:wrap;gap:var(--space-3)">
+      <div class="section-title" style="margin-bottom:0">Robinhood Global Operations</div>
+    </div>
+    <div id="worldMap" style="position:relative">
+      <div class="map-tooltip" id="mapTooltip"></div>
+    </div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#00d4b1"></div>HQ / Primary Office</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div>Active Office</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Licensed / Bitstamp</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fbbf24;opacity:0.8"></div>Pending Close (H1 2026)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa;opacity:0.5"></div>Future Target</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Confirmed Locations</div>
+    <div class="grid-3">
+      <div class="card">
+        <div style="font-size:1.2rem;margin-bottom:var(--space-2)">🇺🇸</div>
+        <div style="font-size:var(--text-sm);font-weight:700;color:var(--text);margin-bottom:var(--space-2)">United States — 8 Offices</div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.8">
+          <div>📍 <strong>Menlo Park, CA</strong> — Global HQ (85 Willow Road)</div>
+          <div>📍 <strong>New York, NY</strong> — Financial, institutional</div>
+          <div>📍 <strong>Chicago, IL</strong> — Midwest financial ops</div>
+          <div>📍 <strong>Bellevue, WA</strong> — West Coast engineering</div>
+          <div>📍 <strong>Denver, CO</strong> — Regional ops</div>
+          <div>📍 <strong>Lake Mary, FL</strong> — Southeast hub</div>
+          <div>📍 <strong>Westlake, TX</strong> — Regional support</div>
+          <div>📍 <strong>Washington, DC</strong> — Government affairs</div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.2rem;margin-bottom:var(--space-2)">🌍</div>
+        <div style="font-size:var(--text-sm);font-weight:700;color:var(--text);margin-bottom:var(--space-2)">Canada & Europe — Active</div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.8">
+          <div>📍 <strong>Toronto, Canada</strong> — Canadian HQ (~140 staff)</div>
+          <div>🟡 <strong>WonderFi (Bitbuy/Coinsquare)</strong> — H1 2026 close</div>
+          <div>📍 <strong>London, UK</strong> — FCA-authorized broker (70 St Mary Axe)</div>
+          <div>📍 <strong>Amsterdam, Netherlands</strong> — EU operations (Strawinskylaan 3101)</div>
+          <div>📍 <strong>Luxembourg City</strong> — Bitstamp Europe S.A. (MiCA-licensed)</div>
+          <div>📍 <strong>Ljubljana, Slovenia</strong> — Bitstamp Financial Services</div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.2rem;margin-bottom:var(--space-2)">🌏</div>
+        <div style="font-size:var(--text-sm);font-weight:700;color:var(--text);margin-bottom:var(--space-2)">Asia-Pacific — Growing</div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.8">
+          <div>📍 <strong>Singapore</strong> — APAC HQ + Bitstamp (MAS-licensed)</div>
+          <div>🟡 <strong>Jakarta, Indonesia</strong> — PT Buana Capital + PT Pedagang (H1 2026)</div>
+          <div style="margin-top:var(--space-2);font-weight:600;color:var(--text)">Future Targets:</div>
+          <div>🔮 <strong>Malaysia</strong> — ASEAN expansion from SG base</div>
+          <div>🔮 <strong>Thailand / Philippines</strong> — Mobile-first markets</div>
+          <div>🔮 <strong>India</strong> — Largest retail investing market</div>
+          <div>🔮 <strong>Australia</strong> — English-speaking, strong retail</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ STOCK TAB ═══════════════════ -->
+<!-- ═══════════════════ STOCK TAB ═══════════════════ -->
+<div id="tab-stock" class="tab-panel">
+  <div class="section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);flex-wrap:wrap;gap:var(--space-3)">
+      <div class="section-title" style="margin-bottom:0">HOOD Stock — Past 12 Months</div>
+      <div class="btn-group" id="stockViewBtns">
+        <button class="btn-toggle active" onclick="switchStock('price')">Price</button>
+        <button class="btn-toggle" onclick="switchStock('pe')">P/E Ratio</button>
+        <button class="btn-toggle" onclick="switchStock('mktcap')">Market Cap</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="stockChart" height="110"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+      <div style="font-size:var(--text-xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-right:var(--space-2);line-height:22px">Chart Markers:</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>Earnings / Beat</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:50%;background:#00d4b1;flex-shrink:0"></div>HOOD Summit / Major Launch</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:50%;background:#fbbf24;flex-shrink:0"></div>Acquisition / Deal</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:50%;background:#a78bfa;flex-shrink:0"></div>Regulatory / Policy</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:50%;background:#f87171;flex-shrink:0"></div>Selloff / Negative Event</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Key Stock Statistics</div>
+    <div class="grid-4">
+      <div class="kpi kpi-accent"><div class="kpi-label">Current Price</div><div class="kpi-value">$68.90</div><div class="kpi-sub kpi-down">▼ $1.21 (−1.73%) today</div></div>
+      <div class="kpi kpi-red"><div class="kpi-label">52-Week Low</div><div class="kpi-value">$29.66</div><div class="kpi-sub">+132% from 52W low</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">52-Week High</div><div class="kpi-value">$153.86</div><div class="kpi-sub kpi-down">−55.2% from high</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">Avg Daily Volume</div><div class="kpi-value">29.5M</div><div class="kpi-sub">Today: 23.2M</div></div>
+      <div class="kpi kpi-gold"><div class="kpi-label">TTM P/E</div><div class="kpi-value">33.6x</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">Fwd P/E (FY26E)</div><div class="kpi-value">~22x</div><div class="kpi-sub">On $3.15 est. EPS</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Short Interest</div><div class="kpi-value">~8.5%</div><div class="kpi-sub">of float</div></div>
+      <div class="kpi kpi-accent"><div class="kpi-label">2025 Performance</div><div class="kpi-value">+203%</div><div class="kpi-sub kpi-down">2026 YTD: −39%</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Post-Earnings Reactions</div>
+    <div class="chart-wrap">
+      <canvas id="earningsReactChart" height="100"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ HISTORY TAB ═══════════════════ -->
+<div id="tab-history" class="tab-panel">
+  <div style="max-width:820px">
+    <div class="verdict-box">
+      <div class="verdict-title">The Son of Immigrants Who Rewired Wall Street</div>
+      <div class="verdict-sub">Vlad Tenev, Baiju Bhatt, and the mission to democratize finance for all</div>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">1987 — Sofia, Bulgaria</div>
+        <div class="timeline-title">Vladimir Tenev Is Born</div>
+        <div class="timeline-text">Vladimir Tenev is born in Sofia, Bulgaria, to a family that would soon make the journey to America. His parents were educated professionals — his father an economist, his mother a teacher. When Vlad was five years old, his family moved to Washington, D.C., where his father took a position at the World Bank. Growing up as the child of Bulgarian immigrants in the United States, Tenev would later describe watching his parents work hard to navigate a financial system that felt inaccessible and opaque — a memory that would shape everything he built.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2005–2011 — Stanford University</div>
+        <div class="timeline-title">Two Mathematicians Meet</div>
+        <div class="timeline-text">Vlad Tenev studied mathematics at Stanford, where he met Baiju Bhatt, another first-generation immigrant and the son of Indian parents who had moved to the United States. Both were struck by a shared observation: Wall Street was a closed club. Professional traders paid minimal or zero commissions to execute trades. Ordinary Americans paid $5–$10 per trade. The wealth-building machinery of the American economy was available to everyone in theory — but only accessible in practice to those who already had money. That paradox would become the founding idea of Robinhood. Tenev also attended UCLA's graduate mathematics program before leaving to co-found his first company.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2012–2013 — Palo Alto, California</div>
+        <div class="timeline-title">The Name, the Idea, the $3.4M Seed</div>
+        <div class="timeline-text">Tenev and Bhatt founded Robinhood Markets in April 2013 — intentionally named for the folk hero who took from the rich and gave to the poor. The product concept was radical for its time: zero-commission stock trading via a mobile-first app. While Charles Schwab, TD Ameritrade, and E-Trade charged $5–$10 per trade, Robinhood would charge nothing. They would monetize through payment for order flow and margin interest — not retail commissions. The idea was met with deep skepticism by established players who insisted free trading was impossible. Sequoia Capital, Index Ventures, and NEA saw the vision differently, providing a $3.4M seed round.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2014–2015 — Launch & Waitlist</div>
+        <div class="timeline-title">1 Million People on a Waitlist</div>
+        <div class="timeline-text">Before Robinhood launched publicly, Tenev and Bhatt put up a simple landing page. Within days, over one million people had joined the waitlist — one of the most viral pre-launch moments in fintech history. The pent-up demand was obvious: ordinary Americans desperately wanted access to the markets without paying a toll for every transaction. When the app launched in March 2015, it was immediately clear this was not a niche product. Robinhood had tapped something deep in the American psyche — the belief that the stock market should be for everyone, not just the wealthy. Competitors initially dismissed the model. Within three years, every major brokerage had been forced to go to zero commissions to compete.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2019–2020 — $11.2B Valuation</div>
+        <div class="timeline-title">The Democratization Accelerates</div>
+        <div class="timeline-text">Robinhood's user base exploded during the COVID-19 pandemic of 2020. With millions of Americans stuck at home, receiving stimulus checks, and looking for ways to participate in the sudden market rally, Robinhood became the on-ramp of choice for a new generation of investors. The company raised money at an $11.2 billion valuation in 2020. For the first time in American history, retail investors were not bystanders — they were participants, and Robinhood was the vehicle. Vlad Tenev's childhood observation — that the financial system served the already-wealthy — was finally being corrected, at scale, by the company he had built.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot" style="background:var(--red)"></div>
+        <div class="timeline-year">January 2021 — GameStop Crisis</div>
+        <div class="timeline-title">The Darkest Moment</div>
+        <div class="timeline-text">In late January 2021, a Reddit-fueled short squeeze in GameStop (GME) sent the stock from $20 to $480 in days, squeezing hedge funds and drawing millions of new retail investors into the market. At the peak of the frenzy, Robinhood restricted purchases of GameStop, AMC, and several other stocks due to a collateral call from DTCC — the clearing house — that Robinhood could not immediately meet. The decision ignited a firestorm. Users felt betrayed. Politicians from both parties called for investigations. Tenev was hauled before Congress. The company's IPO plans were complicated. For a brief but agonizing period, Robinhood's founding mission — to democratize finance — seemed to have been violated by its own infrastructure limitations. It was the hardest test of Tenev's career.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">July 2021 — NASDAQ IPO</div>
+        <div class="timeline-title">Going Public at $38</div>
+        <div class="timeline-text">Robinhood went public on NASDAQ on July 29, 2021, raising $2.1 billion at a $32 billion valuation — one of the largest fintech IPOs in history. In a remarkable decision that reflected Tenev and Bhatt's values, the company reserved 35% of IPO shares for retail investors through its own platform — unprecedented in IPO history. Wall Street's gatekeepers had always kept IPO allocations for their institutional clients. Robinhood gave its own users first access. The stock initially stumbled after IPO but briefly spiked above $85 in August before settling. The long rebuild — and the true company-building era — was just beginning.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot" style="background:var(--red)"></div>
+        <div class="timeline-year">2022 — The Reckoning</div>
+        <div class="timeline-title">Revenue Collapses 25%, Stock Falls 90%</div>
+        <div class="timeline-text">As retail trading volumes collapsed post-pandemic, Robinhood's revenue fell from $1.81B (2021) to $1.36B (2022). The company laid off approximately 30% of its workforce over two rounds. The stock, once above $85, fell to a low of $6.56 — a 92% decline from the all-time high. Critics declared Robinhood a failed company, a meme-stock casualty, proof that commission-free trading was never a real business. Tenev, the immigrant's son who had spent a decade building something he believed in, refused to give up. He restructured the cost base, preserved the engineering talent that mattered most, and began building the product foundation for what would become the super app.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2023–2024 — The Rebuild</div>
+        <div class="timeline-title">Revenue Doubles, Profitability Returns</div>
+        <div class="timeline-text">Tenev's bet on the next cycle paid off. Revenue recovered to $1.86B in 2023 and then surged +58% to $2.95B in 2024 — the company's first full year of GAAP profitability. The product expansion was accelerating: Robinhood launched retirement accounts with a 1% IRA match (no other brokerage offered this), Gold Card in March 2024, prediction markets, 24-hour trading, index options, futures, and international brokerage in the UK. Bitstamp was acquired in June 2024 for $200M — what would prove to be a steal, giving Robinhood 100+ country reach and institutional crypto infrastructure. TradePMR was acquired for access to $40B+ in RIA assets. The Pluto AI acquisition in July 2025 signaled the AI-powered advisory future.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2025 — The Super App Year</div>
+        <div class="timeline-title">Revenue +52%, HOOD Triples, 11 Businesses at $100M+ ARR</div>
+        <div class="timeline-text">In 2025, Robinhood delivered its most consequential year: revenue grew 52% to $4.47B, adjusted EBITDA margin reached 56.4%, and the stock tripled from ~$25 to $153 before pulling back. Banking launched in November 2025 and immediately attracted $100M then $300M then $400M in deposits within weeks. Strategies hit $1B in AUM in 7 months. The Gold Card grew 5x to 600K holders. Prediction markets hit $12B+ in event contracts in their first full year. WonderFi was agreed for Canada. Two Indonesian acquisitions were announced. Bitstamp became MAS-licensed in Singapore. Robinhood Ventures Fund I (RVI) was prepared for a NYSE listing. Vlad Tenev, the Bulgarian-American immigrant's son, had built the most important new financial institution in America.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2026 — The Opportunity</div>
+        <div class="timeline-title">Down 55% — But the Thesis Has Never Been Stronger</div>
+        <div class="timeline-text">As of April 2026, HOOD trades at $68.90 — 55% below its October 2025 high. Crypto weakness and macro de-risking have punished the stock. But the businesses keep compounding: Banking hit $1.5B in deposits by March 2026. Platinum Card launched. RVI listed on NYSE. Family investing launched. The $1.5B buyback was authorized. The GENIUS Act is law. The Clarity Act is advancing. Indonesia and Canada are nearly complete. Cortex AI is rolling out. Robinhood Social is in final testing. Vlad Tenev, at 38 years old, continues to run the company with the urgency of someone who has been underestimated his entire career — and has proven those doubters wrong at every turn.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot" style="background:var(--gold)"></div>
+        <div class="timeline-year">The Decade Ahead</div>
+        <div class="timeline-title">Building for the $100 Trillion Wealth Transfer</div>
+        <div class="timeline-text">Tenev speaks often about the $100 trillion generational wealth transfer already underway as Baby Boomers pass their assets to Millennials and Gen Z. His thesis: that generation will not use the same institutions their parents used. They will use the app where they already invest, trade, bank, and plan. Robinhood's goal is to be that app for as many people as possible — in America, in the UK, in Europe, in Canada, in Indonesia, and eventually across the world. The child of immigrants who wanted to make the American dream accessible to everyone is building the institution that will carry that dream into the 21st century.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer" style="max-width:820px">This history section is compiled from public sources, earnings call transcripts, company filings, and news reports. Some details represent approximations or synthesis of publicly available information.</div>
+</div>
+
+</main>
+
+<script>
+// ── TAB SYSTEM ──
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  // support both onclick="showTab('id',this)" and programmatic calls
+  const activeBtn = btn || (typeof event !== 'undefined' && event && event.currentTarget) || null;
+  if(activeBtn) activeBtn.classList.add('active');
+  else { document.querySelectorAll('.nav-tab').forEach(t=>{ if(t.textContent.trim().toLowerCase().includes(id.toLowerCase().replace('_',' '))) t.classList.add('active'); }); }
+  if (!chartsInitialized[id]) { initTab(id); chartsInitialized[id] = true; }
+}
+const chartsInitialized = { summary: true };
+
+// ── CHART DEFAULTS ──
+Chart.defaults.color = '#8892a4';
+Chart.defaults.borderColor = '#242b36';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+
+function chartOpts(extra={}) {
+  return {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { display: false }, tooltip: { backgroundColor:'#1c2129', borderColor:'#2e3848', borderWidth:1, titleColor:'#e8eaf0', bodyColor:'#8892a4', padding:10, cornerRadius:6 } },
+    scales: {
+      x: { grid: { color:'#242b36' }, ticks: { color:'#8892a4' } },
+      y: { grid: { color:'#1c2129' }, ticks: { color:'#8892a4' } }
+    },
+    ...extra
+  };
+}
+
+// ── FINANCIALS DATA ──
+const annualData = {
+  labels: ['FY2021','FY2022','FY2023','FY2024','FY2025'],
+  revenue: [1815,1358,1865,2951,4473],
+  netIncome: [-3700,-1000,-541,1411,1883],
+  netMargin: [-204.1,-73.6,-29.0,47.8,42.1]
+};
+const quarterlyData = {
+  labels: ['Q1 2025','Q2 2025','Q3 2025','Q4 2025'],
+  revenue: [927,1007,1258,1283],
+  netIncome: [336,479,621,447],
+  netMargin: [36.3,47.6,49.4,34.8]
+};
+
+let finChart, stockChartInst;
+let currentFinPeriod = 'annual';
+let currentStockView = 'price';
+
+function buildFinChart(data) {
+  const ctx = document.getElementById('finChart').getContext('2d');
+  if (finChart) finChart.destroy();
+  finChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [
+        { label:'Revenue ($M)', data: data.revenue, backgroundColor: 'rgba(34,197,94,0.7)', borderColor:'#22c55e', borderWidth:1, yAxisID:'y', order:2 },
+        { label:'Net Income ($M)', data: data.netIncome, backgroundColor: data.netIncome.map(v => v >= 0 ? 'rgba(163,230,53,0.7)' : 'rgba(248,113,113,0.6)'), borderColor: data.netIncome.map(v => v >= 0 ? '#a3e635' : '#f87171'), borderWidth:1, yAxisID:'y', order:2 },
+        { label:'Net Margin (%)', data: data.netMargin, type:'line', borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,0.1)', tension:0.4, pointRadius:4, pointBackgroundColor:'#60a5fa', yAxisID:'y2', order:1 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:true,
+      plugins: { legend:{ display:true, position:'top', labels:{ color:'#8892a4', boxWidth:12, padding:16 } }, tooltip:{ backgroundColor:'#1c2129', borderColor:'#2e3848', borderWidth:1, titleColor:'#e8eaf0', bodyColor:'#8892a4', padding:10, cornerRadius:6, callbacks:{ label: ctx => { const v=ctx.raw; if(ctx.dataset.yAxisID==='y2') return ` Net Margin: ${v != null ? (v >= 0 ? '+' : '')+v.toFixed(1)+'%' : 'N/A'}`; return ` ${ctx.dataset.label}: $${v < 0 ? '-$'+Math.abs(v)+'M' : v+'M'}`; } } } },
+      scales: { x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4', callback:v=>`$${v}M`}, stacked:false}, y2:{position:'right',grid:{display:false},min:-250,max:100,ticks:{color:'#60a5fa',callback:v=>`${v}%`}} }
+    }
+  });
+}
+
+function switchFinancials(period) {
+  currentFinPeriod = period;
+  document.querySelectorAll('#finPeriodBtns .btn-toggle').forEach((b,i) => b.classList.toggle('active', (period==='annual'&&i===0)||(period==='quarterly'&&i===1)));
+  buildFinChart(period === 'annual' ? annualData : quarterlyData);
+}
+
+// ── STOCK DATA ──
+// ── STOCK DATA — 40 data points Apr 2025 → Apr 2026 ──
+// Dates spaced ~9-10 days apart to cover 1 year
+const stockPrices = [29.66,32,35,38,43,41,47,55,63,73,83,92,97,112,122,132,136,141,146,153.86,149,139,131,119,111,101,95,90,80,75,71,68,65,62,65,68,72,70,68.90];
+const stockDates  = [];
+(function(){
+  const d = new Date('2025-04-02');
+  for(let i=0;i<stockPrices.length;i++){
+    stockDates.push(new Date(d));
+    d.setDate(d.getDate()+9);
+  }
+})();
+
+// Significant news catalysts mapped to approximate data-point indices
+const stockEvents = [
+  { idx:1,  label:"Q1 '25 Earnings Beat\n+50% YoY rev", color:'#22c55e', shape:'circle' },
+  { idx:3,  label:"Gold Card 5x growth\nannounced", color:'#fbbf24', shape:'circle' },
+  { idx:5,  label:"TradePMR Integration\ncomplete", color:'#60a5fa', shape:'circle' },
+  { idx:7,  label:"Bitstamp close\n$200M deal", color:'#00d4b1', shape:'circle' },
+  { idx:9,  label:"S&P 500 Inclusion\nannounced", color:'#22c55e', shape:'rectRot' },
+  { idx:10, label:"Q2 '25 Beat\nPrediction Mkt $300M+", color:'#22c55e', shape:'circle' },
+  { idx:12, label:"GENIUS Act\nsigned into law", color:'#a78bfa', shape:'circle' },
+  { idx:14, label:"CLARITY Act\npasses House", color:'#a78bfa', shape:'circle' },
+  { idx:16, label:"HOOD Summit / Investor Day\nBanking + Strategies launch", color:'#00d4b1', shape:'rectRot' },
+  { idx:17, label:"Q3 '25 Beat\n$1.26B rev", color:'#22c55e', shape:'circle' },
+  { idx:18, label:"MIAXdx JV signed\nSusquehanna", color:'#fbbf24', shape:'circle' },
+  { idx:19, label:"52W High $153.86\nAll-time high", color:'#f87171', shape:'rectRot' },
+  { idx:21, label:"Crypto market pulls back\nBTC -20%", color:'#f87171', shape:'circle' },
+  { idx:22, label:"Q4 '25 Earnings\n$1.28B rev beat on EPS", color:'#22c55e', shape:'circle' },
+  { idx:24, label:"Robinhood Presents: Take Flight\nPlatinum Card + Strategies enhancements", color:'#00d4b1', shape:'rectRot' },
+  { idx:26, label:"RVI IPO on NYSE\n$25/share", color:'#fbbf24', shape:'circle' },
+  { idx:27, label:"$1.5B Buyback\nauthorized", color:'#22c55e', shape:'circle' },
+  { idx:28, label:"Tariff shock\nMarket selloff", color:'#f87171', shape:'circle' },
+  { idx:29, label:"Banking hits $1.5B\ndeposits", color:'#00d4b1', shape:'circle' },
+  { idx:38, label:"Current: Apr 2, 2026\n$68.90 (-55% off ATH)", color:'#8892a4', shape:'circle' },
+];
+
+function getStockLabel(i, view) {
+  const d = stockDates[i];
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
+}
+
+function buildStockChart(view) {
+  const ctx = document.getElementById('stockChart').getContext('2d');
+  if (stockChartInst) stockChartInst.destroy();
+
+  const rawData = stockPrices;
+  let data, yLabel, yFmt, yFmtTip;
+  if(view==='price'){
+    data=rawData; yLabel='Price ($)';
+    yFmt=v=>`$${v}`; yFmtTip=(v,i)=>`$${v.toFixed(2)}`;
+  } else if(view==='pe'){
+    data=rawData.map(p=>+(p/2.05).toFixed(1)); yLabel='P/E Ratio (TTM)';
+    yFmt=v=>`${v}x`; yFmtTip=(v,i)=>`${v.toFixed(1)}x P/E`;
+  } else {
+    data=rawData.map(p=>+(p*900/1000).toFixed(1)); yLabel='Market Cap ($B)';
+    yFmt=v=>`$${v}B`; yFmtTip=(v,i)=>`$${v.toFixed(1)}B mkt cap`;
+  }
+
+  // Build per-point radius and background arrays for event dots
+  const ptRadius = new Array(data.length).fill(0);
+  const ptHover  = new Array(data.length).fill(6);
+  const ptBg     = new Array(data.length).fill('rgba(0,212,177,0.7)');
+  const ptBorder = new Array(data.length).fill('rgba(0,212,177,0.7)');
+  const ptBW     = new Array(data.length).fill(0);
+  stockEvents.forEach(ev => {
+    ptRadius[ev.idx] = 6;
+    ptBg[ev.idx]     = ev.color;
+    ptBorder[ev.idx] = '#fff';
+    ptBW[ev.idx]     = 1.5;
+    ptHover[ev.idx]  = 9;
+  });
+
+  const labels = stockDates.map(d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}));
+
+  stockChartInst = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label: yLabel, data,
+        borderColor:'#00d4b1', backgroundColor:'rgba(0,212,177,0.07)',
+        fill:true, tension:0.35, borderWidth:2,
+        pointRadius: ptRadius,
+        pointHoverRadius: ptHover,
+        pointBackgroundColor: ptBg,
+        pointBorderColor: ptBorder,
+        pointBorderWidth: ptBW,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1c2129', borderColor:'#2e3848', borderWidth:1,
+          titleColor:'#e8eaf0', bodyColor:'#8892a4', padding:12, cornerRadius:8,
+          callbacks:{
+            title: items => {
+              const i = items[0].dataIndex;
+              const d = stockDates[i];
+              return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+            },
+            label: items => {
+              const v = items.raw, i = items.dataIndex;
+              let lines = [];
+              if(view==='price')      lines.push(` Price: $${v.toFixed(2)}`);
+              else if(view==='pe')    lines.push(` P/E: ${v.toFixed(1)}x`);
+              else                    lines.push(` Market Cap: $${v.toFixed(1)}B`);
+              // append event label if this index has one
+              const ev = stockEvents.find(e=>e.idx===i);
+              if(ev) ev.label.split('\n').forEach(l=>lines.push(` 📌 ${l}`));
+              return lines;
+            },
+            afterLabel: () => null,
+          }
+        }
+      },
+      scales:{
+        x:{ grid:{color:'#1c2129'}, ticks:{color:'#8892a4',maxTicksLimit:10,font:{size:10}} },
+        y:{ grid:{color:'#1c2129'}, ticks:{color:'#8892a4', callback: yFmt} }
+      }
+    }
+  });
+}
+
+function switchStock(view) {
+  currentStockView = view;
+  document.querySelectorAll('#stockViewBtns .btn-toggle').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  buildStockChart(view);
+}
+
+// ── INIT BY TAB ──
+function initTab(id) {
+  if (id === 'financials') {
+    buildFinChart(annualData);
+    // ARPU chart
+    (function(){
+      const ctx = document.getElementById('arpuChart').getContext('2d');
+      const labels = [
+        "Q1'22","Q2'22","Q3'22","Q4'22",
+        "Q1'23","Q2'23","Q3'23","Q4'23",
+        "Q1'24","Q2'24","Q3'24","Q4'24",
+        "Q1'25","Q2'25","Q3'25","Q4'25"
+      ];
+      const arpu = [55,53,45,38, 48,55,70,81, 109,131,148,164, 169,177,177,191];
+      // Color gradient: red→gold→blue→accent as ARPU grows
+      const ptColors = arpu.map(v =>
+        v < 60  ? '#f87171' :
+        v < 100 ? '#fbbf24' :
+        v < 150 ? '#60a5fa' : '#00d4b1'
+      );
+      new Chart(ctx, {
+        type:'line',
+        data:{
+          labels,
+          datasets:[{
+            label:'ARPU ($)',
+            data: arpu,
+            borderColor:'#00d4b1',
+            backgroundColor:'rgba(0,212,177,0.08)',
+            fill:true, tension:0.35, borderWidth:2,
+            pointRadius:5,
+            pointBackgroundColor: ptColors,
+            pointBorderColor:'rgba(255,255,255,0.5)',
+            pointBorderWidth:1,
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:true,
+          plugins:{
+            legend:{display:false},
+            tooltip:{
+              backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,
+              titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,
+              callbacks:{
+                label: ctx => {
+                  const v = ctx.raw;
+                  const prev = ctx.dataIndex > 0 ? arpu[ctx.dataIndex-1] : null;
+                  const chg = prev ? ` (+${((v-prev)/prev*100).toFixed(1)}% QoQ)` : '';
+                  return ` ARPU: $${v}${chg}`;
+                }
+              }
+            }
+          },
+          scales:{
+            x:{grid:{color:'#242b36'},ticks:{color:'#8892a4',font:{size:9}}},
+            y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}`},min:0,max:220,
+               title:{display:true,text:'Trailing 12-Month ARPU ($)',color:'#8892a4',font:{size:10}}}
+          }
+        }
+      });
+    })();
+    // Banking deposits
+    buildBankingDepositChart();
+    // Gold subscribers
+    new Chart(document.getElementById('goldSubChart').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['Q1\'24','Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'], datasets:[{ label:'Gold Subscribers (M)', data:[1.68,1.98,2.19,2.64,3.19,3.48,3.88,4.18], backgroundColor:'rgba(251,191,36,0.6)', borderColor:'#fbbf24', borderWidth:1 }] },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6}}, scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`${v}M`}} } }
+    });
+    // AUC
+    new Chart(document.getElementById('aucChart').getContext('2d'), {
+      type:'line',
+      data:{ labels:['Q1\'24','Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'], datasets:[{ label:'Total AUC ($B)', data:[129.6,139.7,152.2,192.9,220.6,278.6,332.7,322.1], borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,0.08)', fill:true, tension:0.4, pointRadius:3 }] },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6}}, scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}B`}} } }
+    });
+    // Segment chart
+    new Chart(document.getElementById('segChart').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['Q1 2025','Q2 2025','Q3 2025','Q4 2025'],
+        datasets:[
+          { label:'Options', data:[240,265,304,314], backgroundColor:'rgba(34,197,94,0.8)', stack:'s' },
+          { label:'Crypto', data:[252,160,268,221], backgroundColor:'rgba(251,191,36,0.8)', stack:'s' },
+          { label:'Equities', data:[56,66,86,94], backgroundColor:'rgba(163,230,53,0.8)', stack:'s' },
+          { label:'Other Transaction', data:[35,48,72,147], backgroundColor:'rgba(96,165,250,0.7)', stack:'s' },
+          { label:'Net Interest', data:[290,357,456,411], backgroundColor:'rgba(167,139,250,0.7)', stack:'s' },
+          { label:'Other Revenue', data:[54,93,88,96], backgroundColor:'rgba(0,212,177,0.7)', stack:'s' },
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:true, position:'top', labels:{color:'#8892a4',boxWidth:10,padding:12}}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:ctx=>`${ctx.dataset.label}: $${ctx.raw}M`}} }, scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'},stacked:true}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}M`},stacked:true} } }
+    });
+  }
+
+  if (id === 'stress') {
+    runStressTest();
+    runBalanceStress();
+    new Chart(document.getElementById('stressChart').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['FY2025 Actual','Base Case 2026','Crypto Winter','Low Volume Mkt','PFOF Ban (tail risk)'],
+        datasets:[
+          { label:'FCF ($B)', data:[1.62,2.54,1.10,1.20,0.20], backgroundColor:['rgba(34,197,94,0.7)','rgba(96,165,250,0.7)','rgba(251,191,36,0.7)','rgba(45,212,191,0.7)','rgba(248,113,113,0.7)'], borderColor:['#22c55e','#60a5fa','#fbbf24','#2dd4bf','#f87171'], borderWidth:1 }
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:ctx=>`FCF: $${ctx.raw}B`}} }, scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}B`}, min:0, max:3} } }
+    });
+    new Chart(document.getElementById('citriniChart').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['Options/Equities','Crypto','Net Interest','Subscriptions','Banking NII','Prediction Mkts','International','Advisory','Private Mkts'],
+        datasets:[
+          { label:'FY2025 Actual', data:[1253,884,1514,200,50,300,200,93,100], backgroundColor:'rgba(96,165,250,0.6)', borderColor:'#60a5fa', borderWidth:1 },
+          { label:'2028 Base Case', data:[1550,1100,1750,400,180,700,450,220,200], backgroundColor:'rgba(0,212,177,0.5)', borderColor:'#00d4b1', borderWidth:1 },
+          { label:'2028 Bear (Citrini)', data:[650,480,1650,100,30,120,80,50,20], backgroundColor:'rgba(248,113,113,0.55)', borderColor:'#f87171', borderWidth:1 },
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{display:true,position:'top',labels:{color:'#8892a4',boxWidth:10,padding:12,font:{size:11}}},
+          tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,
+            callbacks:{label:ctx=>`${ctx.dataset.label}: $${ctx.raw}M`}} },
+        scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4',maxRotation:30,font:{size:10}}},
+          y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}M`}} } }
+    });
+  }
+
+  if (id === 'valuation') {
+    new Chart(document.getElementById('dcfChart').getContext('2d'), {
+      type:'line',
+      data:{ labels:['2025A','2026E','2027E','2028E','2029E','2030E'],
+        datasets:[
+          { label:'Bull FCF', data:[1.62,2.80,4.00,5.50,7.00,9.00], borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,0.08)', fill:true, tension:0.4, pointRadius:3 },
+          { label:'Base FCF', data:[1.62,2.54,3.49,4.27,5.10,6.00], borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,0.05)', fill:true, tension:0.4, pointRadius:3 },
+          { label:'Bear FCF', data:[1.62,2.10,2.60,3.00,3.40,3.80], borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.05)', fill:true, tension:0.4, pointRadius:3 },
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:true,position:'top',labels:{color:'#8892a4',boxWidth:10,padding:12}}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:ctx=>`${ctx.dataset.label}: $${ctx.raw}B`}} }, scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}B`}} } }
+    });
+    new Chart(document.getElementById('multChart').getContext('2d'), {
+      type:'line',
+      data:{ labels:['Q1\'24','Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25','Now'],
+        datasets:[
+          { label:'P/S (LTM)', data:[7.2,6.5,5.8,8.1,9.4,11.2,14.1,16.2,11.5], borderColor:'#60a5fa', tension:0.4, pointRadius:2 },
+          { label:'P/E (TTM)', data:[null,null,null,null,null,38,45,52,33.6], borderColor:'#fbbf24', tension:0.4, pointRadius:2 },
+          { label:'EV/EBITDA', data:[null,null,null,35,40,48,58,42,28], borderColor:'#a78bfa', tension:0.4, pointRadius:2 },
+        ]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:true,position:'top',labels:{color:'#8892a4',boxWidth:10,padding:12}}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6} }, scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`${v}x`}} } }
+    });
+  }
+
+  if (id === 'analysts') {
+    new Chart(document.getElementById('ptChart').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['$90','$91','$120','$130','$130','$135','$145','$152','$154','$171','$180'],
+        datasets:[{ label:'Price Target', data:[90,91,120,130,130,135,145,152,154,171,180], backgroundColor: d => { const v=d.raw; return v<=75?'rgba(248,113,113,0.7)':v<=100?'rgba(251,191,36,0.7)':v<=130?'rgba(96,165,250,0.7)':'rgba(34,197,94,0.7)'; }, borderWidth:0 }]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:ctx=>`Price Target: $${ctx.raw}`}} }, scales:{ x:{grid:{display:false},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}`},min:0,max:200} },
+        annotation:{ annotations:[{ type:'line', yMin:68.90, yMax:68.90, borderColor:'rgba(0,212,177,0.7)', borderWidth:2, borderDash:[4,4], label:{content:'Current $68.90',display:true,color:'#00d4b1',font:{size:10}} }] }
+      }
+    });
+    new Chart(document.getElementById('upsideChart').getContext('2d'), {
+      type:'bar', indexAxis:'y',
+      data:{ labels:['Needham ($90)','Goldman Sachs ($91)','Piper Sandler ($120)','Bernstein ($130)','Keybanc ($135)','Mizuho ($145)','Cantor ($152)','BofA ($154)','Barclays ($171)','Loop Capital ($180)'],
+        datasets:[{ label:'Upside %', data:[31,32,74,89,96,110,121,123,148,161], backgroundColor:'rgba(0,212,177,0.6)', borderColor:'#00d4b1', borderWidth:1 }]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, indexAxis:'y', plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:ctx=>`Upside: +${ctx.raw}%`}} }, scales:{ x:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`+${v}%`}}, y:{grid:{display:false},ticks:{color:'#8892a4',font:{size:11}}} } }
+    });
+  }
+
+  if (id === 'ownership') {
+    new Chart(document.getElementById('ownershipChart').getContext('2d'), {
+      type:'doughnut',
+      data:{ labels:['Vlad Tenev','Baiju Bhatt','ARK / Other Retail','Vanguard','Fidelity','BlackRock','Other Institutional'],
+        datasets:[{ data:[15,12,8.2,6.1,5.8,4.9,48], backgroundColor:['#00d4b1','#60a5fa','#fbbf24','#a78bfa','#22c55e','#f87171','#4a5568'], borderColor:'#111318', borderWidth:2 }]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:true,position:'right',labels:{color:'#8892a4',boxWidth:10,padding:8,font:{size:10}}}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6} } }
+    });
+    new Chart(document.getElementById('votingChart').getContext('2d'), {
+      type:'doughnut',
+      data:{ labels:['Vlad Tenev (Class B)','Baiju Bhatt (Class B)','All Other Shareholders'],
+        datasets:[{ data:[38,32,30], backgroundColor:['#00d4b1','#60a5fa','#4a5568'], borderColor:'#111318', borderWidth:2 }]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:true,position:'right',labels:{color:'#8892a4',boxWidth:10,padding:8,font:{size:10}}}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6} } }
+    });
+  }
+
+  if (id === 'map') { buildD3Map(); }
+
+  if (id === 'stock') {
+    buildStockChart('price');
+    new Chart(document.getElementById('earningsReactChart').getContext('2d'), {
+      type:'bar',
+      data:{ labels:['Q4\'23','Q1\'24','Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'],
+        datasets:[{ label:'1-Day Post-Earnings Move', data:[13.0,-3.1,3.6,-16.7,14.1,-5.1,-2.9,-10.8,-0.1], backgroundColor: d => d.raw >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(248,113,113,0.7)', borderColor: d => d.raw >= 0 ? '#22c55e' : '#f87171', borderWidth:1 }]
+      },
+      options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:ctx=>`${ctx.raw>=0?'+':''}${ctx.raw}%`}} }, scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4'}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`${v>0?'+':''}${v}%`}} } }
+    });
+  }
+}
+
+
+// ── STRESS TEST ──
+// ── STRESS PRESETS ──
+const PRESETS = {
+  base:         { opt:0,   crypto:0,   nir:0,   eq:0,   sub:0,   opex:0,   label:'Base Case — FY2026 consensus assumptions' },
+  crypto_winter:{ opt:-10, crypto:-75, nir:+8,  eq:-15, sub:+15, opex:+5,  label:'Crypto Winter — BTC/ETH collapse, reduced risk appetite' },
+  rate_hike:    { opt:+15, crypto:-20, nir:+40, eq:+10, sub:+20, opex:+8,  label:'Rate Hike Boom — Fed raises rates, NII surges' },
+  bear_mkt:     { opt:-25, crypto:-50, nir:-10, eq:-30, sub:+5,  opex:-5,  label:'Bear Market — Broad equity selloff, low volumes' },
+  pfof_ban:     { opt:-80, crypto:-10, nir:+5,  eq:-60, sub:+10, opex:-15, label:'PFOF Ban — Worst-case regulatory scenario (tail risk)' },
+  citrini_bear: { opt:-40, crypto:-45, nir:+20, eq:-45, sub:-30, opex:-10, label:'Citrini 2028 Bear — GDP grows, users liquidate to survive' },
+  super_bull:   { opt:+40, crypto:+80, nir:+30, eq:+70, sub:+80, opex:+18, label:'Super App Bull — All products firing: Banking, Social, Prediction Mkts scale' },
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if(!p) return;
+  document.getElementById('optSlider').value    = p.opt;
+  document.getElementById('cryptoSlider').value = p.crypto;
+  document.getElementById('nirSlider').value    = p.nir;
+  document.getElementById('eqSlider').value     = p.eq;
+  document.getElementById('subSlider').value    = p.sub;
+  document.getElementById('opexSlider').value   = p.opex;
+  runStressTest();
+  // Show preset label
+  const w = document.getElementById('stressWarning');
+  if(w.style.display==='none' || w.textContent.startsWith('⬡')) {
+    w.style.display='block';
+    w.style.background='rgba(96,165,250,0.06)';
+    w.style.border='1px solid rgba(96,165,250,0.15)';
+    w.style.color='var(--text-muted)';
+    w.textContent='⬡ Preset: '+p.label;
+  }
+}
+
+const BASE = { options:1253, crypto:884, equities:302, other_tx:596, nir:1514, opex:2662, gross_margin:0.733, tax_rate:0.18 };
+// other_tx includes subscriptions/other revenue (~$596M = $393M other tx + $203M other product as annualized Q4)
+
+function fmtB(v) { if(Math.abs(v)>=1000) return `$${(v/1000).toFixed(2)}B`; return `$${v.toFixed(0)}M`; }
+function pct(v) { return v>=0?`+${v}%`:`${v}%`; }
+
+function getSliderVal(id) { return parseInt(document.getElementById(id).value); }
+
+function runStressTest() {
+  const o=getSliderVal('optSlider'), c=getSliderVal('cryptoSlider'), ni=getSliderVal('nirSlider'),
+        e=getSliderVal('eqSlider'), s=getSliderVal('subSlider'), op=getSliderVal('opexSlider');
+  document.getElementById('optVal').textContent   = pct(o);
+  document.getElementById('cryptoVal').textContent= pct(c);
+  document.getElementById('nirVal').textContent   = pct(ni);
+  document.getElementById('eqVal').textContent    = pct(e);
+  document.getElementById('subVal').textContent   = pct(s);
+  document.getElementById('opexVal').textContent  = pct(op);
+
+  const rev_options = BASE.options*(1+o/100);
+  const rev_crypto  = BASE.crypto*(1+c/100);
+  const rev_eq      = BASE.equities*(1+e/100);
+  const rev_nir     = BASE.nir*(1+ni/100);
+  const rev_other   = BASE.other_tx*(1+s/100);
+  const totalRev    = rev_options+rev_crypto+rev_eq+rev_nir+rev_other;
+  const grossProfit = totalRev*BASE.gross_margin;
+  const opex        = BASE.opex*(1+op/100);
+  const ebitda      = totalRev - opex;
+  const net_income  = ebitda*(1-BASE.tax_rate);
+  const fcf         = net_income*0.86; // ~86% FCF conversion historically
+  const nm          = (net_income/totalRev*100);
+  const fcfm        = (fcf/totalRev*100);
+
+  const color = v => v>0?'var(--green)':v>-500?'var(--gold)':'var(--red)';
+  document.getElementById('sr-rev').textContent  = fmtB(totalRev);
+  document.getElementById('sr-rev').style.color  = color(totalRev-BASE.options-BASE.crypto-BASE.equities-BASE.nir-BASE.other_tx);
+  document.getElementById('sr-gp').textContent   = fmtB(grossProfit);
+  document.getElementById('sr-ebitda').textContent=fmtB(ebitda); document.getElementById('sr-ebitda').style.color=color(ebitda);
+  document.getElementById('sr-ni').textContent   = fmtB(net_income); document.getElementById('sr-ni').style.color=color(net_income);
+  document.getElementById('sr-fcf').textContent  = fmtB(fcf); document.getElementById('sr-fcf').style.color=color(fcf);
+  document.getElementById('sr-nm').textContent   = nm.toFixed(1)+'%'; document.getElementById('sr-nm').style.color=nm>20?'var(--green)':nm>0?'var(--gold)':'var(--red)';
+  document.getElementById('sr-fcfm').textContent = fcfm.toFixed(1)+'%'; document.getElementById('sr-fcfm').style.color=fcfm>20?'var(--green)':fcfm>0?'var(--gold)':'var(--red)';
+  const profitable = net_income > 0;
+  document.getElementById('sr-profit').textContent = profitable?'YES ✓':'NO ✗';
+  document.getElementById('sr-profit').style.color = profitable?'var(--green)':'var(--red)';
+
+  const warn = document.getElementById('stressWarning');
+  if(!profitable){
+    warn.style.display='block'; warn.style.background='rgba(248,113,113,0.08)'; warn.style.border='1px solid rgba(248,113,113,0.2)'; warn.style.color='var(--red)';
+    warn.textContent='⚠ Under these assumptions, Robinhood posts a net loss. The $4.26B cash balance and $3.25B JPMorgan credit line provide runway, but the thesis would require reassessment.';
+  } else if(net_income < 500) {
+    warn.style.display='block'; warn.style.background='rgba(251,191,36,0.08)'; warn.style.border='1px solid rgba(251,191,36,0.2)'; warn.style.color='var(--gold)';
+    warn.textContent='⚠ Profitability is thin under these assumptions. Management would likely cut opex aggressively as it did in 2022.';
+  } else { warn.style.display='none'; }
+
+  updateStressBar(totalRev, grossProfit, ebitda, net_income, fcf);
+}
+
+let stressBarChart;
+function updateStressBar(rev,gp,ebitda,ni,fcf) {
+  const ctx = document.getElementById('stressBarChart').getContext('2d');
+  const labels = ['Revenue','Gross Profit','EBITDA','Net Income','FCF'];
+  const values = [rev,gp,ebitda,ni,fcf];
+  const colors = values.map(v=>v>=0?'rgba(34,197,94,0.7)':'rgba(248,113,113,0.7)');
+  if(stressBarChart) {
+    stressBarChart.data.datasets[0].data = values;
+    stressBarChart.data.datasets[0].backgroundColor = colors;
+    stressBarChart.update(); return;
+  }
+  stressBarChart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'$M', data:values, backgroundColor:colors, borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:c=>fmtB(c.raw)}}},
+      scales:{ x:{grid:{color:'#242b36'},ticks:{color:'#8892a4',font:{size:10}}}, y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}M`}} } }
+  });
+}
+
+function resetStressSliders() {
+  ['optSlider','cryptoSlider','nirSlider','eqSlider','subSlider','opexSlider'].forEach(id=>{document.getElementById(id).value=0;});
+  runStressTest();
+}
+
+// ── BALANCE SHEET STRESS ──
+function runBalanceStress() {
+  const mb=getSliderVal('mbSlider'), cs=getSliderVal('csSlider'), auc=getSliderVal('aucBsSlider'), bk=getSliderVal('bankSlider');
+  document.getElementById('mbVal').textContent  = pct(mb);
+  document.getElementById('csVal').textContent  = pct(cs);
+  document.getElementById('aucBsVal').textContent=pct(auc);
+  document.getElementById('bankVal').textContent= pct(bk);
+
+  const mbVal  = 16.8*(1+mb/100);
+  const csVal  = 32.8*(1+cs/100);
+  const aucVal = 322*(1+auc/100);
+  const bkVal  = 1.5*(1+bk/100);
+
+  const fmt1 = v=>`$${v.toFixed(1)}B`;
+  document.getElementById('bs-cash').textContent='$4.26B'; // cash is static (not affected directly)
+  document.getElementById('bs-mb').textContent=fmt1(mbVal); document.getElementById('bs-mb').style.color=mbVal>10?'var(--green)':'var(--gold)';
+  document.getElementById('bs-cs').textContent=fmt1(csVal); document.getElementById('bs-cs').style.color=csVal>15?'var(--green)':'var(--gold)';
+  document.getElementById('bs-auc').textContent=`$${aucVal.toFixed(0)}B`; document.getElementById('bs-auc').style.color=aucVal>150?'var(--green)':aucVal>80?'var(--gold)':'var(--red)';
+  document.getElementById('bs-bank').textContent=fmt1(bkVal); document.getElementById('bs-bank').style.color=bkVal>0.5?'var(--green)':'var(--gold)';
+
+  const solvencyRisk = mbVal<2||csVal<5?'HIGH':'LOW';
+  document.getElementById('bs-solvency').textContent=solvencyRisk;
+  document.getElementById('bs-solvency').style.color=solvencyRisk==='LOW'?'var(--green)':'var(--red)';
+  document.getElementById('bs-commentary').innerHTML = solvencyRisk==='HIGH'
+    ? '<span style="color:var(--red)">⚠ Severe stress on margin book and cash sweep would pressure liquidity. Robinhood\'s $4.26B cash + $3.25B credit facility provides $7.5B+ buffer, but sustained withdrawal would force management action.</span>'
+    : 'Robinhood\'s <strong>$4.26B cash</strong> + <strong>$3.25B JPMorgan revolving credit</strong> provides $7.5B+ in immediate liquidity. Even in severe scenarios, solvency is maintained. No near-term debt maturities threaten the business.';
+}
+
+// ── BALANCE SHEET PRESETS ──
+const BS_PRESETS = {
+  base:         { mb:0,   cs:0,   auc:0,   bk:0,   label:'Base Case — current balance sheet levels' },
+  margin_call:  { mb:-60, cs:-20, auc:-35, bk:-30, label:'Margin Call Crisis — leveraged accounts liquidate, margin book collapses' },
+  market_crash: { mb:-40, cs:-30, auc:-40, bk:-50, label:'Market Crash −40% — broad equity/crypto decline, deposit withdrawals' },
+  bank_run:     { mb:-10, cs:-15, auc:-10, bk:-80, label:'Banking Run — users withdraw most banking deposits' },
+  bull_mkt:     { mb:+40, cs:+25, auc:+50, bk:+200, label:'Bull Market +50% — asset prices surge, deposits grow rapidly' },
+};
+
+function applyBsPreset(name) {
+  const p = BS_PRESETS[name];
+  if(!p) return;
+  document.getElementById('mbSlider').value   = p.mb;
+  document.getElementById('csSlider').value   = p.cs;
+  document.getElementById('aucBsSlider').value = p.auc;
+  document.getElementById('bankSlider').value  = p.bk;
+  runBalanceStress();
+  const el = document.getElementById('bs-commentary');
+  if(el) {
+    const extra = document.getElementById('bs-preset-label');
+    if(!extra) {
+      const div = document.createElement('div');
+      div.id='bs-preset-label';
+      div.style.cssText='margin-top:8px;font-size:11px;color:var(--text-faint);font-style:italic;';
+      el.parentNode.insertBefore(div, el.nextSibling);
+    }
+    document.getElementById('bs-preset-label').textContent = '⬡ Preset: ' + p.label;
+  }
+}
+
+function resetBalanceSliders() {
+  ['mbSlider','csSlider','aucBsSlider','bankSlider'].forEach(id=>{document.getElementById(id).value=0;});
+  runBalanceStress();
+}
+
+// ── D3 WORLD MAP ──
+async function buildD3Map() {
+  const container = document.getElementById('worldMap');
+  const W = container.clientWidth || 960;
+  const H = 480;
+
+  // Clear any previous map
+  container.querySelectorAll('svg').forEach(s=>s.remove());
+
+  const svg = d3.select('#worldMap').append('svg')
+    .attr('viewBox', `0 0 ${W} ${H}`)
+    .style('background','#0d1117');
+
+  const projection = d3.geoNaturalEarth1()
+    .scale(W / 6.4)
+    .translate([W / 2, H / 2.1]);
+
+  const path = d3.geoPath().projection(projection);
+
+  // Ocean background
+  svg.append('path')
+    .datum({type:'Sphere'})
+    .attr('d', path)
+    .attr('fill','#111827')
+    .attr('stroke','#1e293b')
+    .attr('stroke-width',0.5);
+
+  // Graticule lines
+  const graticule = d3.geoGraticule()();
+  svg.append('path')
+    .datum(graticule)
+    .attr('d', path)
+    .attr('fill','none')
+    .attr('stroke','#1a2235')
+    .attr('stroke-width',0.3);
+
+  // Load world topojson
+  try {
+    const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+    const countries = topojson.feature(world, world.objects.countries);
+    const borders = topojson.mesh(world, world.objects.countries, (a,b)=>a!==b);
+
+    svg.append('g')
+      .selectAll('path')
+      .data(countries.features)
+      .join('path')
+      .attr('d', path)
+      .attr('fill','#1e2d40')
+      .attr('stroke','#0d1117')
+      .attr('stroke-width',0.4);
+
+    svg.append('path')
+      .datum(borders)
+      .attr('d',path)
+      .attr('fill','none')
+      .attr('stroke','#2d3f55')
+      .attr('stroke-width',0.3);
+  } catch(e) {
+    // Fallback if CDN unavailable
+    svg.append('text').attr('x',W/2).attr('y',H/2).attr('text-anchor','middle')
+      .attr('fill','#8892a4').attr('font-size',14).text('Loading map data...');
+  }
+
+  // ── LOCATION DATA ──
+  // [longitude, latitude, name, type, label]
+  const locations = [
+    [-122.14, 37.45, 'Menlo Park, CA — Global HQ', 'hq', 'HQ'],
+    [-74.00,  40.71, 'New York, NY — Financial & Institutional', 'active', ''],
+    [-87.63,  41.88, 'Chicago, IL — Midwest Financial Ops', 'active', ''],
+    [-122.20, 47.61, 'Bellevue, WA — Engineering', 'active', ''],
+    [-104.99, 39.74, 'Denver, CO — Regional Ops', 'active', ''],
+    [-81.37,  28.76, 'Lake Mary, FL — Southeast Hub', 'active', ''],
+    [-97.21,  33.04, 'Westlake, TX — Regional Support', 'active', ''],
+    [-77.04,  38.91, 'Washington, DC — Government Affairs', 'active', ''],
+    [-79.38,  43.65, 'Toronto, Canada — Canadian HQ (~140 staff)', 'active', ''],
+    [-79.35,  43.62, 'WonderFi / Bitbuy / Coinsquare — Toronto (H1 2026 close)', 'pending', ''],
+    [ -0.09,  51.50, 'London, UK — FCA-Authorized Broker (70 St Mary Axe)', 'licensed', ''],
+    [  4.90,  52.37, 'Amsterdam, Netherlands — EU Operations', 'licensed', ''],
+    [  6.13,  49.61, 'Luxembourg City — Bitstamp Europe S.A. (MiCA-licensed)', 'licensed', ''],
+    [ 14.51,  46.05, 'Ljubljana, Slovenia — Bitstamp Financial Services', 'licensed', ''],
+    [103.82,   1.35, 'Singapore — APAC HQ + Bitstamp (MAS-licensed)', 'hq', 'SG'],
+    [106.83,  -6.21, 'Jakarta, Indonesia — PT Buana Capital + PT Pedagang (H1 2026)', 'pending', ''],
+    [101.69,   3.14, 'Kuala Lumpur, Malaysia — Future Target', 'future', ''],
+    [ 77.21,  28.61, 'New Delhi, India — Future Target', 'future', ''],
+    [133.77, -25.27, 'Australia — Future Target', 'future', ''],
+    [100.52,  13.74, 'Bangkok, Thailand — Future Target', 'future', ''],
+  ];
+
+  const typeStyle = {
+    hq:      { color:'#00d4b1', r:7, opacity:0.95 },
+    active:  { color:'#60a5fa', r:4.5, opacity:0.9 },
+    licensed:{ color:'#22c55e', r:4.5, opacity:0.9 },
+    pending: { color:'#fbbf24', r:4.5, opacity:0.85, dashed:true },
+    future:  { color:'#a78bfa', r:3.5, opacity:0.4 },
+  };
+
+  const tooltip = document.getElementById('mapTooltip');
+
+  locations.forEach(([lon, lat, name, type, label]) => {
+    const xy = projection([lon, lat]);
+    if(!xy) return;
+    const [x, y] = xy;
+    const st = typeStyle[type];
+    const g = svg.append('g').style('cursor', type!=='future'?'pointer':'default');
+
+    if(type==='hq' || type==='active' || type==='licensed') {
+      // pulse ring
+      g.append('circle').attr('cx',x).attr('cy',y).attr('r',st.r+4)
+        .attr('fill',st.color).attr('opacity',0.15);
+    }
+    if(type==='pending') {
+      g.append('circle').attr('cx',x).attr('cy',y).attr('r',st.r)
+        .attr('fill','none').attr('stroke',st.color).attr('stroke-width',1.8)
+        .attr('stroke-dasharray','3,2').attr('opacity',st.opacity);
+    } else {
+      g.append('circle').attr('cx',x).attr('cy',y).attr('r',st.r)
+        .attr('fill',st.color).attr('opacity',st.opacity);
+    }
+
+    if(label) {
+      g.append('text').attr('x',x).attr('y',y+3.5).attr('text-anchor','middle')
+        .attr('fill','#000').attr('font-size',6).attr('font-weight','bold')
+        .attr('pointer-events','none').text(label);
+    }
+
+    g.on('mousemove', function(event) {
+      const rect = container.getBoundingClientRect();
+      const tx = event.clientX - rect.left + 12;
+      const ty = event.clientY - rect.top - 30;
+      tooltip.textContent = name;
+      tooltip.style.left = tx+'px';
+      tooltip.style.top = ty+'px';
+      tooltip.style.opacity = 1;
+    }).on('mouseleave', function() {
+      tooltip.style.opacity = 0;
+    });
+  });
+}
+
+// ── BANKING DEPOSITS CHART ──
+function buildBankingDepositChart() {
+  const ctx = document.getElementById('bankingDepositChart').getContext('2d');
+  const labels = ['Nov 2025\n(Launch)','Dec 2025','Jan 2026','Early Feb','Late Feb','Early Mar','Mar 11','Mar 30'];
+  const data   = [0, 0.10, 0.30, 0.40, 0.65, 0.90, 1.00, 1.50];
+  new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{
+      label:'Banking Deposits ($B)',
+      data,
+      borderColor:'#00d4b1',
+      backgroundColor:'rgba(0,212,177,0.1)',
+      fill:true, tension:0.45, pointRadius:5,
+      pointBackgroundColor: data.map((_,i)=>i===data.length-1?'#00d4b1':'rgba(0,212,177,0.7)'),
+      pointBorderColor:data.map((_,i)=>i===data.length-1?'#fff':'rgba(0,212,177,0.4)'),
+      pointBorderWidth:data.map((_,i)=>i===data.length-1?2:1),
+      pointRadius:data.map((_,i)=>i===data.length-1?7:4),
+      borderWidth:2,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#1c2129',borderColor:'#2e3848',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8892a4',padding:10,cornerRadius:6,callbacks:{label:c=>`Deposits: $${c.raw}B`}},
+        annotation:{}
+      },
+      scales:{
+        x:{grid:{color:'#242b36'},ticks:{color:'#8892a4',font:{size:10}}},
+        y:{grid:{color:'#1c2129'},ticks:{color:'#8892a4',callback:v=>`$${v}B`},min:0,max:1.7,
+           title:{display:true,text:'Deposits ($B)',color:'#8892a4',font:{size:10}}}
+      }
+    }
+  });
+}
+
+// Init on page load
+document.addEventListener('DOMContentLoaded', () => { chartsInitialized['summary'] = true; });
+</script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>
