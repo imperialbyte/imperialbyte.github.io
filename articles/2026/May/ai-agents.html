@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imperialbyte - AI Agents</title>
+    <link rel="icon" type="image/png" href="../../../logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../style.css">
+</head>
+<body>
+
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="../../../index.html" class="brand">Imperialbyte</a>
+
+            <ul class="nav-links" id="nav-menu">
+                <li><a href="../../../index.html">Home</a></li>
+                <li><a href="../../../research.html">Research</a></li>
+                <li><a href="../../../opinions.html">Opinions</a></li>
+                <li><a href="../../../index.html#contact">Contact</a></li>
+            </ul>
+
+            <div class="hamburger" id="hamburger-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="article-wrapper">
+        <article class="article-container">
+
+            <a href="../../../index.html" class="back-link">&larr; Back to Home</a>
+
+            <header class="article-header">
+                <h1 class="article-title">AI Agents</h1>
+                <div class="article-meta">
+                    <span class="date">May 27, 2026</span>
+                    <span class="read-time">&bull; 4 min read</span>
+                </div>
+            </header>
+
+            <figure class="article-figure">
+                <img src="../../../images/Robinhood_Agentic_Trading.png" alt="Robinhood Agentic Trading" class="article-hero-img">
+                <figcaption class="image-caption">Image credit: <a href="https://robinhood.com/us/en/newsroom/robinhood-is-now-open-to-agents/">Robinhood Newsroom</a></figcaption>
+            </figure>
+
+            <div class="article-content">
+                <p>Today, Robinhood just became the second "agentic" brokerage, alongside Public.com. Public is another brokerage that built the first <span class="glossary-term" data-term="MCP" data-definition="Model Context Protocol: A standardized framework developed by Anthropic to let AI models securely connect to external tools, data sources, and systems. A company can make an MCP server for their products or software to let other AI models use them.">MCP</span> support (more on this later), and released their own internal Agent native to the platform which is more deterministic and follows instruction closely without the need for external connections.</p>
+
+                <h2>What Are Agents?</h2>
+                <p>An AI with agentic capabilities can autonomously pursue a goal and complete tasks on behalf of the user by taking multiple steps entirely on its own. It can plan, reason, build, and make decisions to accomplish a task. It is the next phase of AI.</p>
+
+                <h2>What is MCP?</h2>
+                <p><span class="glossary-term" data-term="Model Context Protocol" data-definition="A standardized framework developed by Anthropic to let AI models securely connect to external tools, data sources, and systems. A company can make an MCP server for their products or software to let other AI models use them.">Model Context Protocol</span> is a standardized framework developed by Anthropic to let AI models securely connect to external tools, data sources, and systems. A company can make an MCP server for their products or software to let other AI models use them.</p>
+
+                <h2>What Did Robinhood Ship?</h2>
+                <p>Robinhood opened their platform to agents by bringing MCP support to the platform. There are two MCP servers: Robinhood Agentic Trading and the Agentic Banking. The MCP for the brokerage currently only supports equities. What they did different is with the Robinhood Banking MCP, where they currently only have support for agents to have access to the Robinhood gold card, but I'd imagine more features and capabilities to be added in the future for banking. You can connect Claude or ChatGPT to the brokerage or banking product and let the models act on your behalf.</p>
+
+                <figure class="article-figure">
+                    <img src="../../../images/Robinhood_Agent_Credit_Card.png" alt="Robinhood Agent Credit Card" class="inline-img">
+                    <figcaption class="image-caption">Robinhood's Agentic Credit Card integration via the Banking MCP. Image credit: <a href="https://robinhood.com/us/en/newsroom/robinhood-is-now-open-to-agents/">Robinhood Newsroom</a></figcaption>
+                </figure>
+
+                <h2>Guardrails and Risks</h2>
+                <p>There are some guardrails and limits since at the end of the day, it's AI and AI makes mistakes (we do too). You would need a Robinhood Agentic account, completely isolated from your other accounts with notifications and safety settings in place. You can add limits and approval of transactions with the credit card/banking MCP. Robinhood allowed AI models to directly check out products for the consumer, what needs to happen next is for checkout pages on Stripe or Amazon to support agentic activity. The agent has the card details via the Robinhood Banking MCP but doesn't know where to put them or how to checkout.</p>
+
+                <h2>How Are Agents Changing the Way We Work?</h2>
+                <p>Agents are already building for us. Claude Code and Codex are two great agentic coding products. They can read codebases and build on top of them. Developers are spending less time writing code and more time reviewing them instead. They just steer and guide the agents in the right direction. In Robinhood's latest earnings call, they mentioned how agents are internally handling support.</p>
+                <p>China is arguably ahead in consumer agents than the US. Alibaba's Qwen AI hit 300 million monthly active users by early this year. You can use Qwen to buy things on Taobao, book travel through Fliggy, and pay through Alipay. This is all done inside the chatbot. Xiaomi has agents in their phones that run on the operating system level.</p>
+
+                <h2>What Comes Next?</h2>
+                <p>Stripe, Ramp, Visa, and more are all building agentic payment infrastructure. Agents are becoming economic actors, and the next few quarters will be interesting as more agentic capabilities are made. Nvidia, the most valuable company currently, is betting their next growth cycle on agents by making the compute infrastructure for agents that will one day run 24/7. We are still early, most of the Internet still don't support agents natively.</p>
+            </div>
+
+        </article>
+    </main>
+
+    <div id="image-lightbox" class="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <img class="lightbox-content" id="lightbox-img" alt="Enlarged view">
+    </div>
+
+    <div id="glossary-modal" class="lightbox">
+        <div class="stats-card">
+            <span class="lightbox-close" id="close-glossary">&times;</span>
+            <h2 class="stats-title" id="glossary-title" style="margin-bottom: 1rem; color: var(--brand-gold);">Term</h2>
+            <p id="glossary-definition" style="color: var(--text-main); font-size: 1.05rem; line-height: 1.6;"></p>
+        </div>
+    </div>
+
+    <footer id="contact">
+        <div class="footer-content">
+            <p class="copyright">&copy; 2026 Imperialbyte. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="../../../script.js"></script>
+</body>
+</html>
