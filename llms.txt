@@ -1,0 +1,17 @@
+# Imperialbyte
+
+> A personal website exploring technology, analyzing financial markets, and sharing opinions. Built by an electrical engineering student passionate about finance and AI.
+
+## Research & Analysis
+
+- [AI Agents](https://imperialbyte.com/articles/2026/May/ai-agents.html): Robinhood becomes the second agentic brokerage alongside Public.com. Covers MCP support, agentic trading, agentic credit cards, guardrails, and what comes next for AI agents in finance.
+- [Robinhood Presents: Take Flight](https://imperialbyte.com/articles/2026/March/robinhood-presents-take-flight.html): A look at Robinhood's March 2026 keynote covering the Platinum Card, banking growth, family investing features, and the company's path to becoming a financial superapp.
+
+## Opinions & Perspectives
+
+- [Did AI Kill Web Development?](https://imperialbyte.com/opinions/2026/March/did-ai-kill-web-development.html): A first-hand account of vibe coding a full website with AI in less than a day.
+
+## Contact
+
+- Email: contact@imperialbyte.com
+- Website: https://imperialbyte.com
