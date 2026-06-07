@@ -2,6 +2,8 @@
 
 > A personal website exploring technology, analyzing financial markets, and sharing opinions. Built by an electrical engineering student passionate about finance and AI.
 
+- Full content available at: https://imperialbyte.com/llms-full.txt
+
 ## Research & Analysis
 
 - [AI Agents](https://imperialbyte.com/articles/2026/May/ai-agents.html): Robinhood becomes the second agentic brokerage alongside Public.com. Covers MCP support, agentic trading, agentic credit cards, guardrails, and what comes next for AI agents in finance.

@@ -1,0 +1,158 @@
+# Imperialbyte
+
+> A personal website exploring technology, analyzing financial markets, and sharing opinions. Built by an electrical engineering student passionate about finance and AI.
+
+- Website: https://imperialbyte.com
+- Contact: contact@imperialbyte.com
+
+---
+
+## AI Agents
+
+- URL: https://imperialbyte.com/articles/2026/May/ai-agents.html
+- Published: May 27, 2026
+- Category: Research & Analysis
+
+Today, Robinhood just became the second "agentic" brokerage, alongside Public.com. Public is another brokerage that built the first MCP support (more on this later), and released their own internal Agent native to the platform which is more deterministic and follows instruction closely without the need for external connections.
+
+### What Are Agents?
+
+An AI with agentic capabilities can autonomously pursue a goal and complete tasks on behalf of the user by taking multiple steps entirely on its own. It can plan, reason, build, and make decisions to accomplish a task. It is the next phase of AI.
+
+### What is MCP?
+
+Model Context Protocol is a standardized framework developed by Anthropic to let AI models securely connect to external tools, data sources, and systems. A company can make an MCP server for their products or software to let other AI models use them.
+
+### What Did Robinhood Ship?
+
+Robinhood opened their platform to agents by bringing MCP support to the platform. There are two MCP servers: Robinhood Agentic Trading and the Agentic Banking. The MCP for the brokerage currently only supports equities. What they did different is with the Robinhood Banking MCP, where they currently only have support for agents to have access to the Robinhood gold card, but I'd imagine more features and capabilities to be added in the future for banking. You can connect Claude or ChatGPT to the brokerage or banking product and let the models act on your behalf.
+
+### Guardrails and Risks
+
+There are some guardrails and limits since at the end of the day, it's AI and AI makes mistakes (we do too). You would need a Robinhood Agentic account, completely isolated from your other accounts with notifications and safety settings in place. You can add limits and approval of transactions with the credit card/banking MCP. Robinhood allowed AI models to directly check out products for the consumer, what needs to happen next is for checkout pages on Stripe or Amazon to support agentic activity. The agent has the card details via the Robinhood Banking MCP but doesn't know where to put them or how to checkout.
+
+### How Are Agents Changing the Way We Work?
+
+Agents are already building for us. Claude Code and Codex are two great agentic coding products. They can read codebases and build on top of them. Developers are spending less time writing code and more time reviewing them instead. They just steer and guide the agents in the right direction. In Robinhood's latest earnings call, they mentioned how agents are internally handling support.
+
+China is arguably ahead in consumer agents than the US. Alibaba's Qwen AI hit 300 million monthly active users by early this year. You can use Qwen to buy things on Taobao, book travel through Fliggy, and pay through Alipay. This is all done inside the chatbot. Xiaomi has agents in their phones that run on the operating system level.
+
+### What Comes Next?
+
+Stripe, Ramp, Visa, and more are all building agentic payment infrastructure. Agents are becoming economic actors, and the next few quarters will be interesting as more agentic capabilities are made. Nvidia, the most valuable company currently, is betting their next growth cycle on agents by making the compute infrastructure for agents that will one day run 24/7. We are still early, most of the Internet still don't support agents natively.
+
+---
+
+## Robinhood Presents: Take Flight
+
+- URL: https://imperialbyte.com/articles/2026/March/robinhood-presents-take-flight.html
+- Published: March 4, 2026
+- Category: Research & Analysis
+
+A look at Robinhood's growth and announcements from tonight's Take Flight keynote.
+
+### The Democratizer of Finance
+
+On August 21, 2024, I had recently turned 18 and landed in on US soil for the first time for college to start my degree on electrical engineering. I was eager to open my first financial accounts, my first Bank of America checking, and setting up accounts for financial apps like PayPal and CashApp. On August 27, I discovered CashApp offered the ability to buy stocks, and I bought my first $10 of Apple and $10 of Nvidia stock. This begin an entire new journey that I would take.
+
+I sold my Nvidia for a loss the next day and bought it back again lol, I didn't know what I was doing. I bought another $20 of Apple shares. This was my first time taking a good look into investing. On August 31, I opened a Robinhood account and started taking investing seriously and moved my activity onto Robinhood. I was able to get a lot of my friends onboard within a year.
+
+Robinhood has a really great UI. It was simple and sleek and the UI just screams gamification. "Serious investors" may not like it, as the whole point behind the design is to get people to trade more, since that is how Robinhood makes money. The company was founded by Vlad Tenev and Baiju Bhatt to "democratize" access to finance by eliminating fees. Brokers use to charge trades $5 or more for each buy and sell, and owning stocks in general was expensive. Robinhood came in and changed the game by eliminating these fees.
+
+I joined the platform at the end of August 2024. Earlier that year in March, Robinhood held their first ever keynote called Robinhood Presents: The New Gold Standard, where current CEO and co-founder Vlad Tenev did a Steve Jobs Apple-inspired presentation, unveiling the Robinhood Gold Card.
+
+#### Loss Leader
+
+I would imagine how crazy the Gold Card launch was. The rewards were simple—and good—3% cashback across the board, and it was a stainless steel 17 g card for the premium feel. Not to mention there is a version of the Robinhood Gold Card made of actual physical gold that comes with Visa Infinite as opposed to Visa Signature.
+
+Three percent? Really? That's not going to last a year. It's March 2026, nearing the 2 year anniversary of the Gold Card and the rewards are still here...along with the waitlist. I was luckily able to get it last year in November and it made my entire credit card setup that I built over the past year near obsolete.
+
+The whole point of the Robinhood Gold Card and the eye-watering rewards is to create a sense of exclusivity and loyalty among users and attract new customers, encouraging them to stay with the platform and continue using its services. It worked and it's so far a brilliant move as Robinhood had their best year ever in 2025 where the company proved to be a profitable business.
+
+#### Banking
+
+One year after the announcement of the Robinhood Gold Card, the company expanded its offerings to include banking services and wealth management during Robinhood Presents: The Lost City of Gold. This move was designed to create a more comprehensive financial ecosystem for users, allowing them to manage their investments and traditional banking needs in one place.
+
+Banking began rolling out in late 2025 and I got access myself in November, a week after the Gold Card. I have personally moved most of my finances onto Robinhood, but I still need another bank for Zelle, which is a challenge for them to implement.
+
+Banking had $100 million in deposits by the end of 2025, $300 million by the end of January 2026, and $800 million as of Monday.
+
+Banking is so far looking to like a success, and it's a great addition to the Robinhood ecosystem.
+
+Robinhood's earnings over the years. 2025 was a record year with nearly $4.5 billion in revenue, a 51% growth and an impressive net margin of 42%.
+
+A lot has changed since I joined the platform. They made tools for active traders (HOOD Summit) and announced new products and features (Robinhood Presents). More AI tools (Cortex) are coming and Robinhood Social is set to launch later this year. It truly has been incredible seeing this company grow, and tonight, they announced even more.
+
+### Take Flight
+
+Tonight, Robinhood presented their latest innovations and future plans in a keynote titled "Take Flight." The event showcased the company's vision for the next phase of growth and expansion.
+
+#### Robinhood Platinum Card
+
+The newly announced Robinhood Platinum Card is made from real platinum and has a $695 annual fee, a direct competitor to the Amex and Chase premium cards. Benefits include:
+
+- 5% Cashback on Dining
+- $250 Annual DoorDash discount
+- $250 Annual credit at 15K+ eligible restaurants
+- $120 Complimentary DashPass membership
+- 5% Cashback on Travel & Flights
+- 10% Cashback on Hotels & Cars
+- Global Lounge Access
+- No foreign transaction fees
+- Global Entry or TSA PreCheck
+- Unlimited access to 1,800+ Priority Pass lounges
+- $500 Annual hotel credit
+- $300 Annual travel credit
+- Complimentary Oura Membership
+- 160+ advanced lab tests with complimentary $365 Function Health Membership
+- Amazon One Medical Membership ($199 value)
+- $200 annual credit toward wearables
+- $250 annual credit on autonomous rides
+- Complimentary Robinhood Gold membership
+- 1% cash back on other purchases
+
+Over $3,000 in value every year. The Robinhood Platinum Card is an upgrade from the Robinhood Gold Card, and upgrading would make you lose access to the Robinhood Gold Card.
+
+#### Updates On Banking and Strategies
+
+Robinhood Banking deposits hit $800 million, with 50,000 customers accounts. Robinhood Strategies reached $1.5 billion in AUM (Assets Under Management) across 250,000 accounts in just under a year. Robinhood Strategies is getting an upgrade with tax-aware transfers with more options in tax loss harvesting, increased insights on returns, new account types IRAs and managed custodial accounts.
+
+#### Robinhood Family and Custodial and Trust Accounts
+
+Robinhood is launching Robinhood for families, and is adding custodial and trust account options to its platform, allowing families to invest together and manage their finances more effectively. There is the option to send stock as gifts to kids with custodial accounts on Robinhood.
+
+#### Other Updates
+
+Month-early dividends are coming for early access to dividends, along with portfolio overview to see assets better, and the announcement of a new merch store: Robinhood Market at shop.robinhood.com.
+
+Robinhood is working towards building the financial superapp, and now they announced their family investing features.
+
+---
+
+## Did AI Kill Web Development?
+
+- URL: https://imperialbyte.com/opinions/2026/March/did-ai-kill-web-development.html
+- Published: March 3, 2026
+- Category: Opinions & Perspectives
+
+Back in 2022 during the COVID years, or way before that, I started dabbling in programming. One of the things I did was web development and made my own website, learning all the HTML and CSS needed. I forgot about the website until recently when I decided to remake it entirely with AI, because why spend years learning how to forge a hammer when you can describe your house and watch it rise?
+
+### Freelance Reset
+
+The rise of AI has significantly impacted the freelance market, particularly in web development. With AI-powered tools, freelancers can now create websites more efficiently and at a lower cost, leading to increased competition and potentially lower rates.
+
+But not just freelancers, normal people and business owners can create their own websites with minimal technical knowledge. The only limitation they have is their imagination.
+
+On November 30, 2022, OpenAI released ChatGPT, the first true consumer-facing LLM. In mere two months, more than 100 million users had signed up. This kickstarted the AI arms race and billions were poured into AI startups. In just 3 years, AI went from hallucinations to developing entire apps, editing photos, and generating music and video. "Vibe coding" became a reality, and that is what I did with my new website. Through the process of prompt engineering, you simply describe what you want to build, and within minutes, the AI turns your vision into a reality.
+
+This "democratization" of web development has opened access to web design and development for a wider audience. On Fiverr.com you can find freelancers who will make a website for you. You can pay $100 for a 3 page basic website, $320 for a 5 page business website, and over $530 for a fully functional ecommerce website. The alternative is now a serious contender: subscribing to a Claude or Gemini Max plan for a month. For the cost of a nice dinner, you're hiring a on-call developer that builds for you any time and any place, and you can easily direct its path. I guided Gemini to build this entire website all in less than a day: 700 lines of CSS, 150 lines of Javascript, and hundreds more in HTML, all without writing a single line of code. All I did was review the code and make adjustments as needed.
+
+However, this doesn't necessarily mean that all web development jobs are at risk. While AI can handle many aspects of web development, there are still certain tasks that require human creativity and problem-solving skills. For example, designing a unique user interface or creating custom animations may still require a human touch to perfection. AI tools heavily democratized the ability to do such tasks where the main effort will be directed towards prompt engineering and reviewing the results. A random 12 year old can now replicate the same website as a multi-million dollar company.
+
+### The Next Years
+
+As AI continues to evolve, we can expect to see even more advanced tools that will further automate web development tasks. This could lead to a significant reduction in the demand for freelance web developers, as businesses may opt for AI-powered solutions instead. However, it is also possible that new opportunities will arise for freelancers who can adapt and specialize in areas that AI cannot easily replicate.
+
+AI has a significant impact on the freelance web development market, but it also presents new opportunities for those who can leverage these tools effectively. Web development isn't entirely dead for freelancers, the frontend of a website can easily be replicated, reducing the need for a $100 basic site, but the backend may still require human expertise. But it may only be a matter of time before that changes as hundreds of billions are poured into the AI arms race.
+
+Web development isn't dead, but the core has certainly evolved significantly. All of this progress in AI: from a basic chatbot to a fully autonomous web developer, all accelerated in just a few short years. These next few years, or even quarters, will be a transformative period for not just web development, but the entire industry as AI goes from being our tool to becoming a colleague in white-collar tasks.
